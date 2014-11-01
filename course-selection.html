@@ -8,7 +8,7 @@ License URL: http://creativecommons.org/licenses/by/3.0/
 <!DOCTYPE HTML>
 <html>
 <head>
-<title>Hexa a portfolio bootstrap Website Template | Portfolio :: w3layouts</title>
+<title>DaDa's Place</title>
 <!-- Bootstrap -->
 <link href="css/bootstrap.min.css" rel='stylesheet' type='text/css' />
 <link href="css/bootstrap.css" rel='stylesheet' type='text/css' />
@@ -20,8 +20,13 @@ License URL: http://creativecommons.org/licenses/by/3.0/
 <![endif]-->
 <link href='http://fonts.googleapis.com/css?family=Kreon:300,400,700' rel='stylesheet' type='text/css'>
 <link href="css/style.css" rel="stylesheet" type="text/css" media="all" />
+<link href="css/course-selection.css" rel="stylesheet" type="text/css" media="all" />
+
+
 <!-- start plugins -->
 <script type="text/javascript" src="js/jquery.min.js"></script>
+<script src="http://rawgithub.com/briangonzalez/jquery.pep.js/master/src/jquery.pep.js"></script>
+
 	<script>
 		$(function() {
 			var pull 		= $('#pull');
@@ -39,19 +44,23 @@ License URL: http://creativecommons.org/licenses/by/3.0/
     		});
 		});
 	</script>
+  <script>
+    $(document).ready(function() {
+    	var obj = $('.playground.constrain-to-parent .pep');
+    	var snap_freq = 0.4;
+    	var height = Math.ceil(obj.height() * snap_freq);
+    	var width = Math.ceil(obj.width() * snap_freq);
+    	console.log(width);
+    	obj.pep({
+    		grid: [width,height],
+  			useCSSTranslation: false,
+  			constrainTo: 'parent'
+		});
+    })
+  </script>
 <!----font-Awesome----->
    	<link rel="stylesheet" href="fonts/css/font-awesome.min.css">
 <!----font-Awesome----->
-<!-- start light_box -->
-<link rel="stylesheet" type="text/css" href="css/jquery.fancybox.css" media="screen" />
-<script type="text/javascript" src="js/jquery.easing.1.3.js"></script>
-<script type="text/javascript" src="js/jquery.fancybox-1.2.1.js"></script>
-	<script type="text/javascript">
-		$(document).ready(function() {
-			$("div.fancyDemo a").fancybox();
-		});
-	</script>
-
 </head>
 <body>
 <div class="header_bg" id="home"><!-- start header -->
@@ -63,7 +72,7 @@ License URL: http://creativecommons.org/licenses/by/3.0/
 		<nav class="top-nav">
 			<ul class="top-nav nav_list">
 				<li><a href="portfolio.html">portfolio</a></li>
-				<li class="page-scroll"><a href="index.html">About</a></li>
+				<li class="page-scroll"><a href="#about">About</a></li>
 				<li class="logo page-scroll"><a title="hexa" href="index.html"><img src="images/logo.png" alt="" class="responsive"/></a></li>
 			    <li class="page-scroll"><a href="blog.html">blog</a></li>
 				<li class="page-scroll"><a href="#contact">get in touch</a></li>
@@ -76,19 +85,17 @@ License URL: http://creativecommons.org/licenses/by/3.0/
 </div>
 <div class="container"><!-- start main -->
 	<div class="main row">
- 	 	<h2 class="style">list of projects</h2>
-	 	 <div class="grids_of_4 row">
-				<div class="col-md-3 images_1_of_4">
-					<div class="fancyDemo">
-						<a rel="group" title="" href="images/pic1.jpg"><img src="images/pic1.jpg" alt=""class="img-responsive"/></a>
-					</div>
-					 <h3><a href="course-selection.html">Course Selection Tool</a></h3>
-					 <p class="para">I hate arranging my UW courses at the begining of each term so I made this. </p>
-					 <h4><a href="course-selection.html">Explore More</a> </h4>
-				</div>
-
-				<div class="clear"></div>
-			</div>
+ 	 	<h2 class="style">Course Selection Widget</h2>
+ 	 	<div class="selection_tool">
+ 	 		<div class="col-md-8">
+ 	 			<div class="playground constrain-to-parent">
+ 	 				<div class="pep">123</div>
+ 	 			</div>
+ 	 		</div>
+ 	 		<div class="col-md-4 form">
+ 	 			plz lalala
+ 	 		</div>
+ 	 	</div>
 	</div>
 </div><!-- end main -->
 <div class="footer_bg" id="contact"><!-- start footer -->
