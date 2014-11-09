@@ -12,6 +12,7 @@ License URL: http://creativecommons.org/licenses/by/3.0/
 <!-- Bootstrap -->
 <link href="css/bootstrap.min.css" rel='stylesheet' type='text/css' />
 <link href="css/bootstrap.css" rel='stylesheet' type='text/css' />
+<link href="codebase/webix.css" rel="stylesheet" type="text/css" media="screen" charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script type="application/x-javascript"> addEventListener("load", function() { setTimeout(hideURLbar, 0); }, false); function hideURLbar(){ window.scrollTo(0,1); } </script>
  <!--[if lt IE 9]>
@@ -21,12 +22,12 @@ License URL: http://creativecommons.org/licenses/by/3.0/
 <link href='http://fonts.googleapis.com/css?family=Kreon:300,400,700' rel='stylesheet' type='text/css'>
 <link href="css/style.css" rel="stylesheet" type="text/css" media="all" />
 <link href="css/course-selection.css" rel="stylesheet" type="text/css" media="all" />
-
+<link href="fonts/css/font-awesome.min.css" rel="stylesheet" >
 
 <!-- start plugins -->
 <script type="text/javascript" src="js/jquery.min.js"></script>
 <script src="http://rawgithub.com/briangonzalez/jquery.pep.js/master/src/jquery.pep.js"></script>
-
+<script src="codebase/webix.js" type="text/javascript" charset="utf-8"></script>
 	<script>
 		$(function() {
 			var pull 		= $('#pull');
@@ -43,24 +44,84 @@ License URL: http://creativecommons.org/licenses/by/3.0/
         		}
     		});
 		});
-	</script>
-  <script>
-    $(document).ready(function() {
-    	var obj = $('.playground.constrain-to-parent .pep');
-    	var snap_freq = 0.4;
-    	var height = Math.ceil(obj.height() * snap_freq);
-    	var width = Math.ceil(obj.width() * snap_freq);
-    	console.log(width);
-    	obj.pep({
-    		grid: [width,height],
-  			useCSSTranslation: false,
-  			constrainTo: 'parent'
-		});
-    })
+
+
+
+	    $(document).ready(function() {
+	    	var obj = $('.playground.constrain-to-parent .pep');
+	    	var snap_freq = 0.4;
+	    	var height = Math.ceil(obj.height() * snap_freq);
+	    	var width = Math.ceil(obj.width() * snap_freq);
+	    	console.log(width);
+	    	obj.pep({
+	    		grid: [width,height],
+	  			useCSSTranslation: false,
+	  			constrainTo: 'parent'
+			});
+
+			var big_film_set = [{"id":1,"title": "123"}];
+
+			var mylist = {
+				view:"list",
+				template:"#title#",
+				height: 300,
+				select:"multiselect",
+				id: "course_list",
+				data:big_film_set
+			};
+
+			var search_type_complete = function(e){
+				var value = this.getValue().toLowerCase();
+				console.log(value);
+				console.log("123");
+			}
+
+			var onSearchClicked = function(e){
+				console.log("ha");
+				var value = this.getValue().toLowerCase();
+				this.getParentView().validate(); //form.validate()
+
+				$$("course_list").add({
+         			id:value,  //adding  an item with two properties
+         			title:value
+				});
+			}
+			var form1 = [
+				{ view:"search", placeholder :'CS245', label:"Course ID"
+				  , reqiored: true, name:"search_field", on:{
+				  	 'onTimedKeyPress'   : search_type_complete,
+				  	 'onSearchIconClick' : onSearchClicked
+				  }
+				},
+			];
+			webix.ui({
+				container:"course_data",
+				margin:30, cols:[
+					{ margin:0, rows:[
+						{ view:"form",
+						  scroll:false,
+						  width:300,
+						  elements: form1,
+						  rules:{
+							search_field:function(value){ return false }
+						  }
+						},
+						mylist,
+					]}
+				]
+			});
+
+	    });
+
   </script>
-<!----font-Awesome----->
-   	<link rel="stylesheet" href="fonts/css/font-awesome.min.css">
-<!----font-Awesome----->
+
+	<style type="text/css">
+		#listA{
+			float:left; margin:20px;
+		}
+	</style>
+
+
 </head>
 <body>
 <div class="header_bg" id="home"><!-- start header -->
@@ -93,7 +154,7 @@ License URL: http://creativecommons.org/licenses/by/3.0/
  	 			</div>
  	 		</div>
  	 		<div class="col-md-4 form">
- 	 			plz lalala
+ 	 			<div id="course_data"></div>
  	 		</div>
  	 	</div>
 	</div>
