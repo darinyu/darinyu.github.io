@@ -11,3 +11,16 @@
   height: 10%; width: 10%;
 }
 
+.form_text_entry {
+    font-weight: 700;
+    font-size: 18px;
+    text-shadow: 2px 2px 2px rgba(255, 255, 255, 1);
+}
+
+.selecter {
+     max-width:100% !important;
+}
+
+#profileForm .form-control-feedback {
+    float: right;
+}
