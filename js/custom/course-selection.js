@@ -37,11 +37,14 @@ var uw_api = (function () {
 //course_list
 var select_obj = (function(){
     var list;
+    var _length = 0;
+    var _id;
 
     function init( id ){
+        _id = id;
         list = $("select, #"+id);
-        console.log(list);
         list.selecter();
+        hide_empty_list()
     }
 
     function get_item(value){
@@ -51,35 +54,57 @@ var select_obj = (function(){
     function remove_item(value){
         var item = get_item(value);
         if (item.length > 0) {
+            _length -= item.length;
             item.remove();
         }
         list.selecter('refresh');
+        hide_empty_list()
     }
 
     function add_item(value, allow_duplicate){
         var item = get_item(value);
         if (!item.length || allow_duplicate){
             list.append('<option value="' + value + '">'+value+'</option>');
+            _length++;
         }
         list.selecter('refresh');
+        hide_empty_list()
+    }
+
+    function get_length(){
+        return _length;
+    }
+
+    function hide(to_hide){
+        if (to_hide){
+            $(".selecter, #"+_id).parent().addClass("invisible");
+        } else {
+            $(".selecter, #"+_id).parent().removeClass("invisible");
+        }
+    }
+
+    function hide_empty_list(){
+        hide(!_length);
     }
 
     return {
         init:init,
         add_item:add_item,
-        remove_item: remove_item
+        remove_item: remove_item,
+        get_length: get_length
     }
 })();
 
+var course_list = ["CS145","CS135","CS245","MATH145","MATH135"];
 function validation(){
-    console.log("validation");
 
     $.fn.bootstrapValidator.validators.course_name_validator = {
         validate: function(validator, $field, options) {
             var value = $field.val();
-            var response = uw_api.getCourseInfo("CS", "245");
-            console.log(response);
-            return uw_api.isSuccessfulReponse(response);
+            return course_list.indexOf(value) !== -1;
+            //var response = uw_api.getCourseInfo("CS", "245");
+            //console.log(response);
+            //return uw_api.isSuccessfulReponse(response);
         }
     };
 
@@ -102,7 +127,6 @@ function validation(){
                 },
                 onSuccess: function(e, data) {
                     var value = $("[name=courses]").val();
-                    console.log("here it is: " + value);
                     select_obj.add_item(value);
                     console.log("passed!");
                 },
@@ -129,16 +153,7 @@ var init = function(){
     var snap_freq = 0.4;
     var height = Math.ceil(obj.height() * snap_freq);
     var width = Math.ceil(obj.width() * snap_freq);
-    console.log(width);
     select_obj.init("course_list");
-    select_obj.add_item("CS245");
-    select_obj.remove_item("2");
-
-    $("#course_item").keyup(function(event){
-        if(event.keyCode == 13){
-
-        }
-    });
     validation();
 
     //console.log($("select"));
