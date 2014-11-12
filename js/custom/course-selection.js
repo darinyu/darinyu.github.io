@@ -2,9 +2,21 @@ function clone(settings){
     return $.extend({}, settings);
 }
 
+function dump(obj){
+    JSON.stringify(obj, null, "\t")
+}
+
+function merge_options(obj1,obj2){
+    var obj3 = {};
+    for (var attrname in obj1) { obj3[attrname] = obj1[attrname]; }
+    for (var attrname in obj2) { obj3[attrname] = obj2[attrname]; }
+    return obj3;
+}
+
 var uw_api = (function () {
     var uw_api_key = '7169a9c78a8a6c0f2885854562b114c4';
     var uw_api_url = 'https://api.uwaterloo.ca/v2/';
+    var last_request_successful = true;
 
     var response_code = {
         200: {is_valid: true,  message:"Request successful"},
@@ -17,14 +29,28 @@ var uw_api = (function () {
     };
 
 
-    var getCourseInfo = function(course_name, catalog_number){
-        var url = uw_api_url + "courses/" + course_name + "/" + catalog_number + ".json";
-        var response_data;
+    var getCourseInfo = function(subject, catalog_number, cb){
+        var url = uw_api_url + "courses/" + subject + "/" + catalog_number + ".json";
         $.get( url, { key: uw_api_key })
             .done(function( data ) {
-                response_data = data;
+                cb(data);
+                last_request_successful = isSuccessfulReponse(data);
+                return data;
             });
-        return response_data;
+    }
+
+    var getCourseSchedule = function(subject, catalog_number, cb){
+        var url = uw_api_url + "courses/" + subject + "/" + catalog_number + "/schedule.json";
+        $.get( url, { key: uw_api_key })
+            .done(function( data ) {
+                cb(data);
+                last_request_successful = isSuccessfulReponse(data);
+                return data;
+            });
+    }
+
+    var isLastRequestSeccessful = function(){
+        return last_request_successful;
     }
 
     var isSuccessfulReponse = function( response ){
@@ -34,7 +60,9 @@ var uw_api = (function () {
 
     return {
         isSuccessfulReponse: isSuccessfulReponse,
-        getCourseInfo: getCourseInfo
+        isLastRequestSeccessful: isLastRequestSeccessful,
+        getCourseInfo: getCourseInfo,
+        getCourseSchedule: getCourseSchedule
     }
 }());
 
@@ -210,6 +238,8 @@ var calendar = (function(){
     };
     var cls;
     var settings;
+    var holiday_background_color = "#00FF00";
+    var holiday_text_color = "#000000";
     var date = new Date();
     var d = date.getDate();
     var m = date.getMonth();
@@ -241,6 +271,19 @@ var calendar = (function(){
         cls.fullCalendar('renderEvent', eventData, false);
     }
 
+    function addEvent( event_data, isHoliday ){
+        console.log("addEvent");
+        console.log("1. " + JSON.stringify(event_data));
+        event_data["id"] = ++count;
+        if (isHoliday){
+            event_data["color"] = holiday_background_color;
+            event_data["textColor"] = holiday_text_color;
+            event_data["holiday"] = true;
+        }
+        console.log("2. " +JSON.stringify(event_data));
+        cls.fullCalendar('renderEvent', event_data, false);
+    }
+
     function eventDragStop(event, jsEvent, ui, view){
         var eventData = {
             title: "new Event",
@@ -257,6 +300,10 @@ var calendar = (function(){
         cls.fullCalendar('removeEvents', ids);
     }
 
+    function refresh(){
+        removeEvents();
+    }
+
     function removePlaceholderEvents(extra_ids){
         var arr = [0];
         if (extra_ids){
@@ -267,16 +314,53 @@ var calendar = (function(){
     return {
         init:init,
         removeEvents:removeEvents,
-        removePlaceholderEvents:removePlaceholderEvents
+        refresh:refresh,
+        removePlaceholderEvents:removePlaceholderEvents,
+        addEvent:addEvent
     }
 })();
 
-function on_form_submmit(){
-   if (e.preventDefault) e.preventDefault();
-   console.log("form submitted");
-    /* do what you want with the form */
-    asd;
-    // You must return false to prevent the default form behavior
+
+function on_form_submmit(e){
+    var selected_courses = [];
+
+    function cb_to_add_event(response){
+        //console.log("responses: " + JSON.stringify(response));
+        //TODO check response;
+        console.log(JSON.stringify(response, null, "\t")); // Indented with tab
+
+            var date = new Date();
+    var d = date.getDate();
+    var m = date.getMonth();
+    var y = date.getFullYear();
+
+        var event_data = {
+            title: response["data"][0]["title"],
+            start: new Date(y,m,d+2, 8),
+            description: response["data"][0]["title"]
+        }
+        console.log("0. " + JSON.stringify(event_data));
+        calendar.addEvent(event_data, false);
+    }
+
+    function add_courses_to_calendar(){
+        calendar.refresh();
+        selected_courses.forEach(function(entry){
+                var arr = entry.split(/\s+/);
+                var subject = arr[0];
+                var catalog_number = arr[1];
+                uw_api.getCourseSchedule(subject, catalog_number, cb_to_add_event);
+        });
+    }
+    if (e.preventDefault) e.preventDefault();
+    console.log("form submitted");
+
+
+    $('.course_list option:selected').each(function(){
+        selected_courses.push(this.getAttribute("value"));
+    });
+    console.log(selected_courses);
+    add_courses_to_calendar();
     return false;
 }
 
@@ -290,7 +374,6 @@ var init = function(){
     var d = date.getDate();
     var m = date.getMonth();
     var y = date.getFullYear();
-
 
     var events = [
         {
@@ -313,11 +396,7 @@ var init = function(){
     calendar.removePlaceholderEvents(); //cleanup
     courses.init();
 
-
-
-
-
-
+    $("#my_form").submit(on_form_submmit);
 
     //console.log($("select"));
     //$("select").selecter();

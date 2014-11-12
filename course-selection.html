@@ -32,7 +32,6 @@ License URL: http://creativecommons.org/licenses/by/3.0/
 <script type="text/javascript" src="js/bootstrap.min.js"></script>
 <script type="text/javascript" src="js/typeahead.bundle.min.js"></script>
 <script type="text/javascript" src="js/jquery.fs.selecter.min.js"></script>
-<script type="text/javascript" src="js/bootstrapValidator.min.js"></script>
 <script type="text/javascript" src="js/moment.min.js"></script>
 <script type="text/javascript" src="js/fullcalendar_patched.min.js"></script>
 
@@ -91,7 +90,7 @@ License URL: http://creativecommons.org/licenses/by/3.0/
                 </div>
             </div>
             <div class="col-md-4">
-                    <form id="my_form" onSubmit="on_form_submmit()">
+                    <form id="my_form">
                         <div class="form-group has-feedback">
                             <label>Course ID</label>
                             <input type="text" class="form-control" name="courses" id="courses" placeholder="CS245"/>
@@ -100,7 +99,7 @@ License URL: http://creativecommons.org/licenses/by/3.0/
                         <div>
                             <div class="form-group">
                                 <label>Course List</label>
-                                <select name="selecter_multiple" class="course_list" multiple="multiple">
+                                <select class="course_list" multiple="multiple">
                                 </select>
                             </div>
                             <div class="form-group">
