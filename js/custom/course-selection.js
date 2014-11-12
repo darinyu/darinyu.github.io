@@ -100,55 +100,93 @@ var select_obj = (function(){
 })();
 
 var course_list = ["CS145","CS135","CS245","MATH145","MATH135"];
-function validation(){
 
-    $.fn.bootstrapValidator.validators.course_name_validator = {
-        validate: function(validator, $field, options) {
-            var value = $field.val();
-            return course_list.indexOf(value) !== -1;
-            //var response = uw_api.getCourseInfo("CS", "245");
-            //console.log(response);
-            //return uw_api.isSuccessfulReponse(response);
+var courses= (function(){
+    var input;
+
+    function has_error(){
+        input.parent().removeClass("has-success");
+        input.parent().addClass("has-error");
+    }
+
+    function has_success(){
+        input.parent().removeClass("has-error");
+        input.parent().addClass("has-success");
+    }
+
+    function neutralize(){
+        input.parent().removeClass("has-success has-error");
+    }
+
+    function is_valid(){
+        return input.parent().hasClass("has-success");
+    }
+
+    function select(){
+        has_success();
+    }
+
+    function check_suggestion(){
+        var length = $('.tt-suggestion').length;
+        if (length === 0){
+            console.log("no suggestion");
+            has_error();
+        } else if (length === 1){
+            has_success();
         }
-    };
+    }
 
-    var bv = $('#profileForm').bootstrapValidator({
-        feedbackIcons: {
-            valid: 'glyphicon glyphicon-ok',
-            invalid: 'glyphicon glyphicon-remove',
-            validating: 'glyphicon glyphicon-refresh'
-        },
-        fields: {
-            courses: {
-                trigger: 'blur',
-                validators: {
-                    notEmpty: {
-                        message: 'Course name is required'
-                    },
-                    course_name_validator:{
-                        message: 'yeah, you get it wrong'
-                    }
-                },
-                onSuccess: function(e, data) {
-                    var value = $("[name=courses]").val();
-                    select_obj.add_item(value);
-                    console.log("passed!");
-                },
-                onError: function(e, data) {
-                    data.bv.updateMessage("courses", "course_name_validator", "Did you mean CS145?");
-                    console.log("not found!");
-                },
+    function init(){
+        console.log("courses init called");
+
+        var countries = new Bloodhound({
+            datumTokenizer: function(d) { return Bloodhound.tokenizers.whitespace(d.name); },
+            queryTokenizer: Bloodhound.tokenizers.whitespace,
+            limit: 3,
+            local: [
+                { name: 'CS 245' },
+                { name: 'CS  246' },
+                { name: 'CS 145'},
+                { name: 'MATH 135'},
+                { name: 'MATH 136'},
+            ]
+        });
+
+        countries.initialize();
+        input = $("#courses");
+        input.typeahead({
+          hint: true,
+          highlight: true,
+          autoselect: true,
+          minLength: 1
+        }, {
+          displayKey: 'name',
+          source: countries.ttAdapter()
+        }).on('typeahead:selected typeahead:autocompleted', select)
+          .on('input', check_suggestion);
+
+        input.on('keypress', function (e) {
+
+            if (e.which === 13) {
+                e.preventDefault();
+                if (is_valid()){
+                    clear_input();
+                }
             }
-        }
-    });
+        });
+    }
 
-    $('[name="courses"]').on('keypress', function (e) {
-        if (e.which === 13) {
-            e.preventDefault();
-            bv.data('bootstrapValidator').revalidateField("courses");
-        }
-    });
-}
+    function clear_input(){
+        select_obj.add_item(input.val());
+        neutralize();
+        input.val("").trigger("input keypress");
+    }
+
+    return {
+        init:init,
+        clear_input:clear_input
+    }
+})();
 
 var calendar = (function(){
     var defaults = {
@@ -163,7 +201,7 @@ var calendar = (function(){
         editable: true,
         allDaySlot: false,
         eventDurationEditable: false,
-        height: 800,
+        height: "auto",
         minTime: "08:00:00",
         maxTime: "24:00:00",
         columnFormat: {
@@ -207,7 +245,8 @@ var calendar = (function(){
         var eventData = {
             title: "new Event",
             start: new Date(y,m,d+1,16),
-            id: ++count
+            id: ++count,
+            myData: {course_catlog : 123}
         };
         removeEvents([event.id]);
         removePlaceholderEvents();
@@ -232,20 +271,27 @@ var calendar = (function(){
     }
 })();
 
+function on_form_submmit(){
+   if (e.preventDefault) e.preventDefault();
+   console.log("form submitted");
+    /* do what you want with the form */
+    asd;
+    // You must return false to prevent the default form behavior
+    return false;
+}
+
 var init = function(){
     console.log("course-selection.init called");
 
-    var obj = $('.playground.constrain-to-parent .pep');
-    var snap_freq = 0.4;
-    var height = Math.ceil(obj.height() * snap_freq);
-    var width = Math.ceil(obj.width() * snap_freq);
     select_obj.init("course_list");
-    validation();
+    //validation();
 
     var date = new Date();
     var d = date.getDate();
     var m = date.getMonth();
     var y = date.getFullYear();
+
+
     var events = [
         {
             title: 'Event',
@@ -264,7 +310,14 @@ var init = function(){
             holiday: true,
         }];
     calendar.init(events);
-    calendar.removePlaceholderEvents();
+    calendar.removePlaceholderEvents(); //cleanup
+    courses.init();
+
+
+
+
+
+
 
     //console.log($("select"));
     //$("select").selecter();
