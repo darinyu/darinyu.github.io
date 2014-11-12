@@ -1,3 +1,7 @@
+function clone(settings){
+    return $.extend({}, settings);
+}
+
 var uw_api = (function () {
     var uw_api_key = '7169a9c78a8a6c0f2885854562b114c4';
     var uw_api_url = 'https://api.uwaterloo.ca/v2/';
@@ -77,9 +81,9 @@ var select_obj = (function(){
 
     function hide(to_hide){
         if (to_hide){
-            $(".selecter, #"+_id).parent().addClass("invisible");
+            $(".selecter, #"+_id).parent().parent().addClass("invisible");
         } else {
-            $(".selecter, #"+_id).parent().removeClass("invisible");
+            $(".selecter, #"+_id).parent().parent().removeClass("invisible");
         }
     }
 
@@ -146,6 +150,88 @@ function validation(){
     });
 }
 
+var calendar = (function(){
+    var defaults = {
+        defaultView: 'agendaWeek',
+        header: {
+            left: '',
+            center: 'title',
+            right: ''
+        },
+        titleFormat: '[UW Course Schedule]',
+        weekends: false,
+        editable: true,
+        allDaySlot: false,
+        eventDurationEditable: false,
+        height: 800,
+        minTime: "08:00:00",
+        maxTime: "24:00:00",
+        columnFormat: {
+            week: 'ddd',
+        }
+    };
+    var cls;
+    var settings;
+    var date = new Date();
+    var d = date.getDate();
+    var m = date.getMonth();
+    var y = date.getFullYear();
+    var count = 3;
+
+    function init(event_config){
+        var settings = clone(defaults);
+        if (event_config){
+            settings["events"] = event_config;
+        };
+        cls = $('#calendar');
+        settings["eventDragStart"] = eventDragStart;
+        settings["eventDragStop"] = eventDragStop;
+        cls.fullCalendar(settings);
+    }
+
+    function eventDragStart(){
+        console.log("drag");
+        var eventData = {
+            title: 'Event',
+            start: new Date(y, m, d, 15),
+            description: 'long description',
+            color: "#00FF00",
+            textColor: "#000000",
+            holiday: true,
+            id: 0
+        }
+        cls.fullCalendar('renderEvent', eventData, false);
+    }
+
+    function eventDragStop(event, jsEvent, ui, view){
+        var eventData = {
+            title: "new Event",
+            start: new Date(y,m,d+1,16),
+            id: ++count
+        };
+        removeEvents([event.id]);
+        removePlaceholderEvents();
+        cls.fullCalendar("renderEvent", eventData, true);
+    }
+
+    function removeEvents(ids){
+        cls.fullCalendar('removeEvents', ids);
+    }
+
+    function removePlaceholderEvents(extra_ids){
+        var arr = [0];
+        if (extra_ids){
+            arr.concat(extra_ids);
+        }
+        removeEvents(arr);
+    }
+    return {
+        init:init,
+        removeEvents:removeEvents,
+        removePlaceholderEvents:removePlaceholderEvents
+    }
+})();
+
 var init = function(){
     console.log("course-selection.init called");
 
@@ -155,6 +241,30 @@ var init = function(){
     var width = Math.ceil(obj.width() * snap_freq);
     select_obj.init("course_list");
     validation();
+
+    var date = new Date();
+    var d = date.getDate();
+    var m = date.getMonth();
+    var y = date.getFullYear();
+    var events = [
+        {
+            title: 'Event',
+            start: new Date(y, m, d, 10),
+            description: 'long description',
+            id: 1
+        },
+        {
+            title: 'background',
+            start: new Date(y, m, d, 11),
+            end: new Date(y, m, d, 14),
+            description: 'long description',
+            id: 0,
+            color: "#00FF00",
+            textColor: "#000000",
+            holiday: true,
+        }];
+    calendar.init(events);
+    calendar.removePlaceholderEvents();
 
     //console.log($("select"));
     //$("select").selecter();

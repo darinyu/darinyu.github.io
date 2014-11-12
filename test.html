@@ -1,74 +1,109 @@
 <!DOCTYPE html>
-<!--[if lt IE 7]><html class="no-js lt-ie9 lt-ie8 lt-ie7"><![endif]-->
-<!--[if IE 7]><html class="no-js lt-ie9 lt-ie8"><![endif]-->
-<!--[if IE 8]><html class="no-js lt-ie9"><![endif]-->
-<!--[if gt IE 8]><!--><html class="no-js"><!--<![endif]-->
-    <head>
-        <meta charset="utf-8">
-        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-        <title>Selectize.js Demo</title>
-        <meta name="description" content="">
-        <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
-        <link rel="stylesheet" href="css/normalize.css">
-        <link rel="stylesheet" href="css/stylesheet.css">
-        <!--[if IE 8]><script src="js/es5.js"></script><![endif]-->
-        <script src="js/jquery.js"></script>
-        <script src="js/selectize.js"></script>
-        <script src="js/index.js"></script>
-    </head>
-    <body>
-        <div id="wrapper">
-            <h1>Selectize.js</h1>
-            <div class="demo">
-                <h2>API</h2>
-                <p>Examples of how to interact with the control programmatically.</p>
-                <div class="control-group">
-                    <label for="select-tools">Tools:</label>
-                    <select id="select-tools" multiple placeholder="Pick a tool..."></select>
-                </div>
-                <div class="buttons">
-                    <input type="button" value="clear()" id="button-clear">
-                    <input type="button" value="clearOptions()" id="button-clearoptions">
-                    <input type="button" value="addOption()" id="button-addoption">
-                    <input type="button" value="addItem()" id="button-additem">
-                    <input type="button" value="setValue()" id="button-setvalue">
-                </div>
-                <script>
-                var $select = $('#select-tools').selectize({
-                    maxItems: null,
-                    valueField: 'id',
-                    labelField: 'title',
-                    searchField: 'title',
-                    options: [
-                        {id: 1, title: 'Spectrometer', url: 'http://en.wikipedia.org/wiki/Spectrometers'},
-                        {id: 2, title: 'Star Chart', url: 'http://en.wikipedia.org/wiki/Star_chart'},
-                        {id: 3, title: 'Electrical Tape', url: 'http://en.wikipedia.org/wiki/Electrical_tape'}
-                    ],
-                    create: false
-                });
-                // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-                var control = $select[0].selectize;
-                $('#button-clear').on('click', function() {
-                    control.clear();
-                });
-                $('#button-clearoptions').on('click', function() {
-                    control.clearOptions();
-                });
-                $('#button-addoption').on('click', function() {
-                    control.addOption({
-                        id: 4,
-                        title: 'Something New',
-                        url: 'http://google.com'
-                    });
-                });
-                $('#button-additem').on('click', function() {
-                    control.addItem(2);
-                });
-                $('#button-setvalue').on('click', function() {
-                    control.setValue([2, 3]);
-                });
-                </script>
-            </div>
-        </div>
-    </body>
+<html>
+<head>
+<link href='css/fullcalendar.min.css' rel='stylesheet' />
+<link href='js/fullcalendar.print.css' rel='stylesheet' media='print' />
+<script src='js/jquery.min.js'></script>
+<script src='js/moment.min.js'></script>
+<script src='js/fullcalendar.min.js'></script>
+<script>
+
+    $(document).ready(function() {
+
+        var date = new Date();
+        var d = date.getDate();
+        var m = date.getMonth();
+        var y = date.getFullYear();
+
+        $('#calendar').fullCalendar({
+            header: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'month,agendaWeek,basicWeek,agendaDay,basicDay'
+            },
+            editable: true,
+
+            eventDataTransform: function(event) {
+                var copy = $.extend({}, event);
+                copy.title += "*";
+                return copy;
+            },
+            events: {
+                eventDataTransform: function(event) {
+                    var copy = $.extend({}, event);
+                    copy.title += "!";
+                    return copy;
+                },
+                events: [
+                    {
+                        title: 'All Day Event',
+                        start: new Date(y, m, 1)
+                    },
+                    {
+                        title: 'Long Event',
+                        start: new Date(y, m, d-5),
+                        end: new Date(y, m, d-2)
+                    },
+                    {
+                        id: 999,
+                        title: 'Repeating Event',
+                        start: new Date(y, m, d-3, 16, 0),
+                        allDay: false
+                    },
+                    {
+                        id: 999,
+                        title: 'Repeating Event',
+                        start: new Date(y, m, d+4, 16, 0),
+                        allDay: false
+                    },
+                    {
+                        title: 'Meeting',
+                        start: new Date(y, m, d, 10, 30),
+                        allDay: false
+                    },
+                    {
+                        title: 'Lunch',
+                        start: new Date(y, m, d, 12, 5),
+                        end: new Date(y, m, d, 14, 43),
+                        allDay: false
+                    },
+                    {
+                        title: 'Birthday Party',
+                        start: new Date(y, m, d+1, 19, 0),
+                        end: new Date(y, m, d+1, 22, 30),
+                        allDay: false
+                    },
+                    {
+                        title: 'Click for Google',
+                        start: new Date(y, m, 28),
+                        end: new Date(y, m, 29),
+                        url: 'http://google.com/'
+                    }
+                ]
+            }
+
+        });
+
+    });
+
+</script>
+<style>
+
+    body {
+        margin-top: 40px;
+        text-align: center;
+        font-size: 13px;
+        font-family: "Lucida Grande",Helvetica,Arial,Verdana,sans-serif;
+        }
+
+    #calendar {
+        width: 900px;
+        margin: 0 auto;
+        }
+
+</style>
+</head>
+<body>
+<div id='calendar'></div>
+</body>
 </html>
