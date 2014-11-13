@@ -21,6 +21,9 @@
     float: right;
 }
 
+.start_widget {
+    height: 1400px;
+}
 span {
     width:100%;
 }

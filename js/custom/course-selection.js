@@ -254,6 +254,7 @@ var calendar = (function(){
     var placeholder_text_color = placeholder_background_color;
     var count = 3;
     var date,y,m,d;
+    var course_data = {};
 
     function init(event_config){
         date = moment();
@@ -277,7 +278,7 @@ var calendar = (function(){
     function snap_to_placeholder(my_event){
         var array = cls.fullCalendar('clientEvents');
         var has_overlap = false;
-        var start,end;
+        var start,end,id;
         //event_obj from drag is in diff timezone, hence need offset
         var start_this =  moment(my_event.start).add(5,'hours');
         var end_this = moment(my_event.end).add(5, 'hours');
@@ -291,6 +292,7 @@ var calendar = (function(){
                 if (!( (start_this.add(overlap_threshold, 'mins') >= end_comp) ||
                        (start_comp.add(overlap_threshold, 'mins') >= end_this) )){
                     has_overlap = true;
+                    id = comp_event["data"]["original_id"];
                     start = start_comp;
                     end = end_comp;
                 }
@@ -299,39 +301,39 @@ var calendar = (function(){
         console.log("has_overlap: " + has_overlap);
         return {
             has_overlap:has_overlap,
+            id:id,
             start:start,
             end:end
         }
     }
 
     function addEvent( event_data, isHoliday ){
-        //console.log("addEvent");
-        //console.log("1. " + JSON.stringify(event_data));
         event_data["id"] = ++count;
         if (isHoliday){
             event_data["color"] = placeholder_background_color;
             event_data["textColor"] = placeholder_text_color;
             event_data["placeholder"] = true;
         }
-        //console.log("2. " +JSON.stringify(event_data));
         cls.fullCalendar('renderEvent', event_data, true);
     }
 
-    function eventDragStart(){
-        console.log("drag");
-        var num = random_number(8,20);
-        var d_off = 0;
-        var event_data = {
-            title: 'Event',
-            start: moment({y:y, M:m, d:d+d_off, h:num}),
-            end: moment({y:y, M:m, d:d+d_off, h:num+2}),
-            description: 'long description',
-            color: placeholder_background_color,
-            textColor: placeholder_text_color,
-            placeholder: true,
-            id: 0
-        }
-        renderEvents(event_data);
+    function eventDragStart(event){
+        var course_type = event.data.type;
+        var course_name = event.data.name;
+        var id = event.id;
+        var my_list = course_data[course_name][course_type].filter(function(element){
+            return element.id !== id;
+        });
+        var placeholder_events = my_list.map(function(element){
+            var ele = clone(element);
+            ele["color"] = placeholder_background_color;
+            ele["textColor"] = placeholder_text_color;
+            ele["placeholder"] = true;
+            ele["data"]["original_id"] = ele["id"];
+            ele["id"] = 0;
+            return ele;
+        })
+        renderBatchEvents(placeholder_events);
     }
 
     function eventDrop(event, delta, revertFunc){
@@ -341,6 +343,12 @@ var calendar = (function(){
             revertFunc();
         } else {
             removeEvents([event.id]);
+            var course_type = event.data.type;
+            var course_name = event.data.name;
+            var id = snap_info.id;
+            var events = course_data[course_name][course_type].filter(function(element){
+                return element.id === id;
+            });
             var event_data = {
                 title: "new Event",
                 start: snap_info.start,
@@ -348,7 +356,7 @@ var calendar = (function(){
                 backgroundColor: event.backgroundColor,
                 id: event.id,
             };
-            renderEvents(event_data);
+            renderBatchEvents(events);
         }
         removePlaceholderEvents();
     }
@@ -359,6 +367,10 @@ var calendar = (function(){
 
     function renderEvents(event_data, isStick){
         cls.fullCalendar("renderEvent", event_data, isStick);
+    }
+
+    function renderBatchEvents(events){
+        cls.fullCalendar( 'addEventSource', events );
     }
 
     function rerenderEvents(){
@@ -415,16 +427,26 @@ var calendar = (function(){
             return class_list;
         }
 
+
         //TODO check response;
         var data = response["data"];
+        var course_type_array = ["LEC","TUT","LAB"];//,"TST"];
         var events = [];
-        var has_lec = false;
-        var has_tut = false;
+        var course_name = data[0]["subject"] + data[0]["catalog_number"];
+        course_data[course_name] = {
+            LEC: new Array(),
+            TUT: new Array(),
+            LAB: new Array(),
+            TST: new Array()
+        };
+
         $.each(data, function(index, obj){
+            var course_type = obj["section"].substr(0,3);
+            var id = course_name + obj["section"];
             var date = obj["classes"][0]["date"];
-            var is_lec = start_with(obj["section"],"LEC");
-            if ((is_lec && has_lec) || (!is_lec && has_tut)){
-                return; //only needs one
+            var color_str = course_type + "_color";
+            if (!(color_str in course_data[course_name])){
+                course_data[course_name][color_str] = color.next_color();
             }
             var class_info = {
                 start_time: date["start_time"],
@@ -432,24 +454,34 @@ var calendar = (function(){
                 weekdays: date["weekdays"]
             }
             var my_list = get_course_time_info(class_info);
-            var id = obj["subject"] + obj["catalog_number"] + obj["section"].substr(0,3);
-            var color_str = color.next_color();
             $.each(my_list, function(index, time_info){
                 var event_data = {
-                    //data : data,
-                    "title": obj["title"] + " - " + obj["section"],
+                    data : {
+                        type: course_type,
+                        name: course_name
+                    },
+                    title: obj["title"] + " - " + obj["section"],
                     id : id,
                     start: time_info["start"],
                     end: time_info["end"],
-                    backgroundColor: color_str,
-                    borderColor: color_str
+                    backgroundColor: course_data[course_name][color_str],
+                    borderColor: course_data[course_name][color_str]
                 }
-                events.push(event_data);
+                //console.log(course_type);
+                course_data[course_name][course_type].push(event_data);
             });
-            has_lec = has_lec || is_lec;
-            has_tut = has_tut || !is_lec;
         });
-        cls.fullCalendar( 'addEventSource', events )
+
+        $.each(course_type_array, function(index, course_type){
+            if (course_data[course_name][course_type].length){
+                var id = course_data[course_name][course_type][0].id;
+                var my_events = course_data[course_name][course_type].filter(function(element){
+                    return element.id === id;
+                });
+                events = events.concat(my_events);
+            }
+        });
+        renderBatchEvents(events);
     }
 
     return {
@@ -463,7 +495,7 @@ var calendar = (function(){
 })();
 
 var color = (function(){
-    unselected = ["#57246B","#246B69","#6B4024","#1F4918","#BF4840","#6E74CF","#B83D91","#33993A","#309166","#283A77","#413091","#A9A2D7","#BABA5E","#2F5E6F","#3DECF5","#4309AE","#E8E12C","#7186EF","#6FF542","#09AA77","#13AA98","#F35912"]
+    unselected = ["#57246B","#246B69","#6B4024","#1F4918","#BF4840","#6E74CF","#B83D91","#33993A","#309166","#283A77","#413091","#A9A2D7","#BABA5E","#2F5E6F","#3DECF5","#4309AE","#E8E12C","#7186EF","#6FF542","#09AA77","#13AA98","#F35912","#C2EBE1","#CE7DD4","#FFC7E6"];
     selected = [];
 
     function next_color(){
@@ -510,7 +542,6 @@ var init = function(){
     courses.init();
 };
 
-
 function on_form_submmit(e){
     var selected_courses = [];
 
@@ -530,7 +561,6 @@ function on_form_submmit(e){
     $('.course_list option:selected').each(function(){
         selected_courses.push(this.getAttribute("value"));
     });
-    console.log(selected_courses);
     add_courses_to_calendar();
     return false;
 }
