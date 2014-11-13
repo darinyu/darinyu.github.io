@@ -2,8 +2,16 @@ function clone(settings){
     return $.extend({}, settings);
 }
 
-function dump(obj){
-    JSON.stringify(obj, null, "\t")
+function format(obj){
+    return JSON.stringify(obj, null, "\t");
+}
+
+function start_with(str, sub){
+    return str.indexOf(sub) === 0;
+}
+
+function random_number(min,max) {
+    return Math.floor(Math.random()*(max-min+1)+min);
 }
 
 function merge_options(obj1,obj2){
@@ -168,12 +176,17 @@ var courses= (function(){
         console.log("courses init called");
 
         var countries = new Bloodhound({
-            datumTokenizer: function(d) { return Bloodhound.tokenizers.whitespace(d.name); },
+            datumTokenizer: function(d) {
+                var temp_list = Bloodhound.tokenizers.whitespace(d.name);
+                var str = temp_list[0] + temp_list[1]; // CS + 245
+                temp_list.push(str);
+                return temp_list;
+            },
             queryTokenizer: Bloodhound.tokenizers.whitespace,
             limit: 3,
             local: [
                 { name: 'CS 245' },
-                { name: 'CS  246' },
+                { name: 'CS 246' },
                 { name: 'CS 145'},
                 { name: 'MATH 135'},
                 { name: 'MATH 136'},
@@ -224,6 +237,7 @@ var calendar = (function(){
             center: 'title',
             right: ''
         },
+        slotDuration: '00:20:00',
         titleFormat: '[UW Course Schedule]',
         weekends: false,
         editable: true,
@@ -232,72 +246,124 @@ var calendar = (function(){
         height: "auto",
         minTime: "08:00:00",
         maxTime: "24:00:00",
-        columnFormat: {
-            week: 'ddd',
-        }
+        columnFormat: { week: 'ddd' },
+        axisFormat: 'h(:mm)a'
     };
     var cls;
-    var settings;
-    var holiday_background_color = "#00FF00";
-    var holiday_text_color = "#000000";
-    var date = new Date();
-    var d = date.getDate();
-    var m = date.getMonth();
-    var y = date.getFullYear();
+    var placeholder_background_color = "#C7C7C7";
+    var placeholder_text_color = placeholder_background_color;
     var count = 3;
+    var date,y,m,d;
 
     function init(event_config){
+        date = moment();
+        y = date.year();
+        m = date.month();
+        d = date.date();
         var settings = clone(defaults);
         if (event_config){
             settings["events"] = event_config;
         };
         cls = $('#calendar');
         settings["eventDragStart"] = eventDragStart;
-        settings["eventDragStop"] = eventDragStop;
+        settings["eventDrop"] = eventDrop;
+        settings["eventRender"] = function(event, element) {
+            element.find('.fc-event-title').append("<br/>" + event.description);
+        };
+        //console.log(JSON.stringify(settings, null, "\t"));
         cls.fullCalendar(settings);
+    }
+
+    function snap_to_placeholder(my_event){
+        var array = cls.fullCalendar('clientEvents');
+        var has_overlap = false;
+        var start,end;
+        //event_obj from drag is in diff timezone, hence need offset
+        var start_this =  moment(my_event.start).add(5,'hours');
+        var end_this = moment(my_event.end).add(5, 'hours');
+
+        var overlap_threshold = 30; //mins
+        $.each(array, function(index, comp_event){
+            if (has_overlap) return;
+            if(comp_event.id != event.id && comp_event.placeholder){
+                var end_comp = moment(comp_event.end);
+                var start_comp = moment(comp_event.start);
+                if (!( (start_this.add(overlap_threshold, 'mins') >= end_comp) ||
+                       (start_comp.add(overlap_threshold, 'mins') >= end_this) )){
+                    has_overlap = true;
+                    start = start_comp;
+                    end = end_comp;
+                }
+            }
+        });
+        console.log("has_overlap: " + has_overlap);
+        return {
+            has_overlap:has_overlap,
+            start:start,
+            end:end
+        }
+    }
+
+    function addEvent( event_data, isHoliday ){
+        //console.log("addEvent");
+        //console.log("1. " + JSON.stringify(event_data));
+        event_data["id"] = ++count;
+        if (isHoliday){
+            event_data["color"] = placeholder_background_color;
+            event_data["textColor"] = placeholder_text_color;
+            event_data["placeholder"] = true;
+        }
+        //console.log("2. " +JSON.stringify(event_data));
+        cls.fullCalendar('renderEvent', event_data, true);
     }
 
     function eventDragStart(){
         console.log("drag");
-        var eventData = {
+        var num = random_number(8,20);
+        var d_off = 0;
+        var event_data = {
             title: 'Event',
-            start: new Date(y, m, d, 15),
+            start: moment({y:y, M:m, d:d+d_off, h:num}),
+            end: moment({y:y, M:m, d:d+d_off, h:num+2}),
             description: 'long description',
-            color: "#00FF00",
-            textColor: "#000000",
-            holiday: true,
+            color: placeholder_background_color,
+            textColor: placeholder_text_color,
+            placeholder: true,
             id: 0
         }
-        cls.fullCalendar('renderEvent', eventData, false);
+        renderEvents(event_data);
     }
 
-    function addEvent( event_data, isHoliday ){
-        console.log("addEvent");
-        console.log("1. " + JSON.stringify(event_data));
-        event_data["id"] = ++count;
-        if (isHoliday){
-            event_data["color"] = holiday_background_color;
-            event_data["textColor"] = holiday_text_color;
-            event_data["holiday"] = true;
+    function eventDrop(event, delta, revertFunc){
+        var snap_info = snap_to_placeholder(event);
+
+        if (!snap_info["has_overlap"]){
+            revertFunc();
+        } else {
+            removeEvents([event.id]);
+            var event_data = {
+                title: "new Event",
+                start: snap_info.start,
+                end: snap_info.end,
+                backgroundColor: event.backgroundColor,
+                id: event.id,
+            };
+            renderEvents(event_data);
         }
-        console.log("2. " +JSON.stringify(event_data));
-        cls.fullCalendar('renderEvent', event_data, false);
-    }
-
-    function eventDragStop(event, jsEvent, ui, view){
-        var eventData = {
-            title: "new Event",
-            start: new Date(y,m,d+1,16),
-            id: ++count,
-            myData: {course_catlog : 123}
-        };
-        removeEvents([event.id]);
         removePlaceholderEvents();
-        cls.fullCalendar("renderEvent", eventData, true);
     }
 
     function removeEvents(ids){
         cls.fullCalendar('removeEvents', ids);
+    }
+
+    function renderEvents(event_data, isStick){
+        cls.fullCalendar("renderEvent", event_data, isStick);
+    }
+
+    function rerenderEvents(){
+        console.log("ha?");
+        cls.fullCalendar( 'rerenderEvents' );
     }
 
     function refresh(){
@@ -311,64 +377,119 @@ var calendar = (function(){
         }
         removeEvents(arr);
     }
+
+    function processScheduleResponse(response){
+        function get_course_time_info(class_info){
+            //get weekday
+            var weekday_string = ["M","T","W","Th","F"];
+            var weekday_list=[];
+            var weekdays_str = class_info["weekdays"];
+            //console.log("start get course time");
+            //console.log("weekdays_str: " + weekdays_str);
+            for (var i=0; i<weekday_string.length; i++){
+                if (weekdays_str.indexOf(weekday_string[i]) === 0){
+                    if (weekday_string[i] === "T" && (weekdays_str.indexOf("Th") ===0)){
+                        continue;
+                    }
+                    weekday_list.push(i+1);
+                    weekdays_str = weekdays_str.substr(weekday_string[i].length);
+                }
+            }
+
+            //start_time, end_time
+            var start_h = class_info["start_time"].split(":")[0];
+            var start_m = class_info["start_time"].split(":")[1];
+            var end_h = class_info["end_time"].split(":")[0];
+            var end_m = class_info["end_time"].split(":")[1];
+
+            var fix = date.weekday();
+            var class_list = [];
+            for (var i=0; i<weekday_list.length; i++){
+                var offset = weekday_list[i] - fix;
+                class_list.push({
+                    start: moment({y:y,M:m,d:d+offset,h:start_h,m:start_m}),
+                    end: moment({y:y,M:m,d:d+offset,h:end_h,m:end_m})
+                })
+            }
+
+            return class_list;
+        }
+
+        //TODO check response;
+        var data = response["data"];
+        var events = [];
+        var has_lec = false;
+        var has_tut = false;
+        $.each(data, function(index, obj){
+            var date = obj["classes"][0]["date"];
+            var is_lec = start_with(obj["section"],"LEC");
+            if ((is_lec && has_lec) || (!is_lec && has_tut)){
+                return; //only needs one
+            }
+            var class_info = {
+                start_time: date["start_time"],
+                end_time: date["end_time"],
+                weekdays: date["weekdays"]
+            }
+            var my_list = get_course_time_info(class_info);
+            var id = obj["subject"] + obj["catalog_number"] + obj["section"].substr(0,3);
+            var color_str = color.next_color();
+            $.each(my_list, function(index, time_info){
+                var event_data = {
+                    //data : data,
+                    "title": obj["title"] + " - " + obj["section"],
+                    id : id,
+                    start: time_info["start"],
+                    end: time_info["end"],
+                    backgroundColor: color_str,
+                    borderColor: color_str
+                }
+                events.push(event_data);
+            });
+            has_lec = has_lec || is_lec;
+            has_tut = has_tut || !is_lec;
+        });
+        cls.fullCalendar( 'addEventSource', events )
+    }
+
     return {
         init:init,
         removeEvents:removeEvents,
         refresh:refresh,
         removePlaceholderEvents:removePlaceholderEvents,
-        addEvent:addEvent
+        addEvent:addEvent,
+        processScheduleResponse:processScheduleResponse
     }
 })();
 
+var color = (function(){
+    unselected = ["#57246B","#246B69","#6B4024","#1F4918","#BF4840","#6E74CF","#B83D91","#33993A","#309166","#283A77","#413091","#A9A2D7","#BABA5E","#2F5E6F","#3DECF5","#4309AE","#E8E12C","#7186EF","#6FF542","#09AA77","#13AA98","#F35912"]
+    selected = [];
 
-function on_form_submmit(e){
-    var selected_courses = [];
-
-    function cb_to_add_event(response){
-        //console.log("responses: " + JSON.stringify(response));
-        //TODO check response;
-        console.log(JSON.stringify(response, null, "\t")); // Indented with tab
-
-            var date = new Date();
-    var d = date.getDate();
-    var m = date.getMonth();
-    var y = date.getFullYear();
-
-        var event_data = {
-            title: response["data"][0]["title"],
-            start: new Date(y,m,d+2, 8),
-            description: response["data"][0]["title"]
-        }
-        console.log("0. " + JSON.stringify(event_data));
-        calendar.addEvent(event_data, false);
+    function next_color(){
+        var color_str = unselected[random_number(0,unselected.length-1)];
+        selected.push[color_str];
+        var index = unselected.indexOf(color_str);
+        unselected.splice(index, 1);
+        return color_str;
     }
 
-    function add_courses_to_calendar(){
-        calendar.refresh();
-        selected_courses.forEach(function(entry){
-                var arr = entry.split(/\s+/);
-                var subject = arr[0];
-                var catalog_number = arr[1];
-                uw_api.getCourseSchedule(subject, catalog_number, cb_to_add_event);
-        });
+    function clear(){
+        unselected.concat(selected);
+        selected = [];
     }
-    if (e.preventDefault) e.preventDefault();
-    console.log("form submitted");
 
-
-    $('.course_list option:selected').each(function(){
-        selected_courses.push(this.getAttribute("value"));
-    });
-    console.log(selected_courses);
-    add_courses_to_calendar();
-    return false;
-}
+    return {
+        next_color:next_color,
+        clear:clear
+    }
+})();
 
 var init = function(){
     console.log("course-selection.init called");
+    $("#my_form").submit(on_form_submmit);
 
     select_obj.init("course_list");
-    //validation();
 
     var date = new Date();
     var d = date.getDate();
@@ -378,107 +499,38 @@ var init = function(){
     var events = [
         {
             title: 'Event',
-            start: new Date(y, m, d, 10),
+            start: moment({y:y, M:10, d:d, h:10}),
+            end: moment({y:y, M:10, d:d, h:12}),
             description: 'long description',
             id: 1
         },
-        {
-            title: 'background',
-            start: new Date(y, m, d, 11),
-            end: new Date(y, m, d, 14),
-            description: 'long description',
-            id: 0,
-            color: "#00FF00",
-            textColor: "#000000",
-            holiday: true,
-        }];
-    calendar.init(events);
-    calendar.removePlaceholderEvents(); //cleanup
+    ]; //TODO remove
+
+    calendar.init();
     courses.init();
-
-    $("#my_form").submit(on_form_submmit);
-
-    //console.log($("select"));
-    //$("select").selecter();
-
-   /* obj.pep({
-        grid: [width,height],
-        useCSSTranslation: false,
-        constrainTo: 'parent'
-    });
-
-    var course_set = [];
-    var mylist = {
-        view:"list",
-        template:"#title#",
-        height: 300,
-        select:"multiselect",
-        id: "course_list",
-        data:course_set
-    };
-    var search_type_complete = function(e){
-        var value = this.getValue().toLowerCase();
-    }
-
-    var onSearchClicked = function(e){
-        console.log("ha");
-        var value = this.getValue().toLowerCase();
-        this.getParentView().validate(); //form.validate()
-        $$("course_list").add({
-            id:value,  //adding  an item with two properties
-            title:value
-        });
-    }
-
-    var always_false = function(){
-        return false;
-    }
-     var course_combo =             {
-                view:"combo", id:"combo1", width:400,label: 'Custom template & filter',  name:"fruit1",
-                value:1, options:{
-                filter:function(item, value){
-                    if(item.name.toString().toLowerCase().indexOf(value.toLowerCase())===0)
-                        return true;
-                    return false;
-                },
-                body:{
-                    template:"#name#",
-                    yCount:3,
-                    data:[
-                        { id:1, name:"Banana"},
-                        { id:2, name:"Papai"},
-                        { id:3, name:"Apple"},
-                        { id:4, name:"Mango"}
-                    ]
-                }
-            }};
-
-    var form1 = [
-        { view:"search", placeholder :'CS245', label:"Course ID"
-          , reqiored: true, name:"search_field", on:{
-             'onTimedKeyPress'   : search_type_complete,
-             'onSearchIconClick' : onSearchClicked
-          }
-        },
-        course_combo
-    ];
-    webix.ui({
-        container:"course_data",
-        margin:30, cols:[
-            { margin:5, rows:[
-                { view:"form",
-                  scroll:false,
-                  width:400,
-                  elements: form1,
-                  rules:{
-                    search_field:function(value){ return false }
-                  }
-                },
-
-                mylist,
-            ]}
-        ]
-    });
-*/
 };
 
+
+function on_form_submmit(e){
+    var selected_courses = [];
+
+    function add_courses_to_calendar(){
+        calendar.refresh();
+        color.clear();
+        selected_courses.forEach(function(entry){
+                var arr = entry.split(/\s+/);
+                var subject = arr[0];
+                var catalog_number = arr[1];
+                uw_api.getCourseSchedule(subject, catalog_number, calendar.processScheduleResponse);
+        });
+    }
+    if (e.preventDefault) e.preventDefault();
+    console.log("form submitted");
+
+    $('.course_list option:selected').each(function(){
+        selected_courses.push(this.getAttribute("value"));
+    });
+    console.log(selected_courses);
+    add_courses_to_calendar();
+    return false;
+}
