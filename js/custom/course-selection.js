@@ -14,6 +14,20 @@ function random_number(min,max) {
     return Math.floor(Math.random()*(max-min+1)+min);
 }
 
+function hide_qtip(){
+    $('.qtip').each(function(){
+        $(this).qtip('hide')
+    });
+}
+
+function disable_qtip(){
+    $('.qtip').qtip('disable');
+}
+
+function enable_qtip(){
+    $('.qtip').qtip('enable');
+}
+
 function merge_options(obj1,obj2){
     var obj3 = {};
     for (var attrname in obj1) { obj3[attrname] = obj1[attrname]; }
@@ -175,7 +189,7 @@ var courses= (function(){
     function init(){
         console.log("courses init called");
 
-        var countries = new Bloodhound({
+        var my_courses = new Bloodhound({
             datumTokenizer: function(d) {
                 var temp_list = Bloodhound.tokenizers.whitespace(d.name);
                 var str = temp_list[0] + temp_list[1]; // CS + 245
@@ -213,7 +227,7 @@ var courses= (function(){
             ]
         });
 
-        countries.initialize();
+        my_courses.initialize();
         input = $("#courses");
         input.typeahead({
           hint: true,
@@ -222,7 +236,7 @@ var courses= (function(){
           minLength: 1
         }, {
           displayKey: 'name',
-          source: countries.ttAdapter()
+          source: my_courses.ttAdapter()
         }).on('typeahead:selected typeahead:autocompleted', select)
           .on('input', check_suggestion);
 
@@ -269,12 +283,40 @@ var calendar = (function(){
         columnFormat: { week: 'ddd' },
         axisFormat: 'h(:mm)a'
     };
+    var event_qtip = {
+        content: "", //need content
+        position: {
+            my: 'bottom left',
+            at: 'top right',
+            target: 'mouse',
+             adjust: {
+                 mouse: false
+             }
+        },
+        show: {
+            effect: function() {
+                $(this).fadeTo(500, 1);
+            },
+            delay: 500,
+            solo:true,
+        },
+        hide: {
+            inactive: 1500,
+        },
+        style: {
+            classes : 'qtip-bootstrap',
+        }
+    }
+
     var cls;
     var placeholder_background_color = "#C7C7C7";
-    var placeholder_text_color = placeholder_background_color;
+    var placeholder_text_color = "#FFFFFF";
+    var placeholder_id = 0;
     var count = 3;
     var date,y,m,d;
     var course_data = {};
+    var tooptip;
+    var snap_info;
 
     function init(event_config){
         date = moment();
@@ -287,10 +329,10 @@ var calendar = (function(){
         };
         cls = $('#calendar');
         settings["eventDragStart"] = eventDragStart;
+        settings["eventDragStop"] = eventDragStop;
         settings["eventDrop"] = eventDrop;
-        settings["eventRender"] = function(event, element) {
-            element.find('.fc-event-title').append("<br/>" + event.description);
-        };
+        settings["eventClick"] = eventClick;
+        settings["eventRender"] = eventRender;
         //console.log(JSON.stringify(settings, null, "\t"));
         cls.fullCalendar(settings);
     }
@@ -306,7 +348,7 @@ var calendar = (function(){
         var overlap_threshold = 30; //mins
         $.each(array, function(index, comp_event){
             if (has_overlap) return;
-            if(comp_event.id != event.id && comp_event.placeholder){
+            if(comp_event.id != event.id && comp_event.id === 0){
                 var end_comp = moment(comp_event.end);
                 var start_comp = moment(comp_event.start);
                 if (!( (start_this.add(overlap_threshold, 'mins') >= end_comp) ||
@@ -332,12 +374,15 @@ var calendar = (function(){
         if (isHoliday){
             event_data["color"] = placeholder_background_color;
             event_data["textColor"] = placeholder_text_color;
-            event_data["placeholder"] = true;
+            event_data["annotation"] = true;
+            //event_data["placeholder"] = true;
         }
         cls.fullCalendar('renderEvent', event_data, true);
     }
 
     function eventDragStart(event){
+        drag_has_overlap = false;
+        console.log("DragStart");
         var course_type = event.data.type;
         var course_name = event.data.name;
         var id = event.id;
@@ -348,16 +393,29 @@ var calendar = (function(){
             var ele = clone(element);
             ele["color"] = placeholder_background_color;
             ele["textColor"] = placeholder_text_color;
-            ele["placeholder"] = true;
+            ele["placeholder"] = false;
+            ele["annotation"] = true;
             ele["data"]["original_id"] = ele["id"];
             ele["id"] = 0;
             return ele;
         })
         renderBatchEvents(placeholder_events);
+
+        hide_qtip();
+        disable_qtip();
+    }
+
+    function eventDragStop(event){
+        console.log("dragstop")
     }
 
     function eventDrop(event, delta, revertFunc){
-        var snap_info = snap_to_placeholder(event);
+        //handle qtip
+        hide_qtip();
+        //enable_qtip();
+         console.log("DragDrop");
+
+        snap_info = snap_to_placeholder(event);
 
         if (!snap_info["has_overlap"]){
             revertFunc();
@@ -379,6 +437,62 @@ var calendar = (function(){
             renderBatchEvents(events);
         }
         removePlaceholderEvents();
+    }
+
+    function eventClick(data, event, view) {
+            console.log("eventClicked");
+    }
+
+
+    function eventRender(event, element) {
+        function term_desc_pair(term, desc){
+            if (!desc){
+                return "";
+            }
+            var format1 = "<dl><dt>"+term+"</dt><dd>"+desc+"</dd></dl>";
+            var format2 = "<span><strong>"+term+"</strong>: "+desc+"</span><br>";
+            return format2;
+        }
+
+        function enrollment_progress(total, cap){
+            var percentage = 0;
+            if (total >= cap){
+                percentage = 100;
+            } else {
+                percentage = Math.floor(total * 100.0 / cap);
+            }
+            //console.log("percentage: " + percentage);
+            var bar_type = "success";
+            if (percentage > 90){
+                bar_type = "danger";
+            } else if (percentage > 80){
+                bar_type = "warning";
+            }
+            var format = '<strong>Enrollment Progress</strong>: ' +
+                         '<div class="progress" style="min-width: 100px">' +
+                         '<div class="progress-bar progress-bar-'+bar_type+'" role="progressbar" aria-valuemin="0" aria-valuemax="100"' +
+                         'aria-valuenow="' + percentage + '"  style="width: '+ percentage + '%;" +>' +
+                         '<span class="sr-only">'+percentage+'% Complete</span>'+
+                         total + " / " + cap +'</div>'+
+                         '</div><br>';
+            //console.log("enroll format: " + format);
+            return format;
+        }
+
+        var data = event.data;
+        var qtip_config = clone(event_qtip);
+        var text =  term_desc_pair("Course Name", data.name)+
+                    term_desc_pair("Instructors", data.instructors.join(" | ")) +
+                    term_desc_pair("Start", moment(event.start).format("HH:mm"))+
+                    term_desc_pair("End", moment(event.end).format("HH:mm"))+
+                    term_desc_pair("Location",data.location)+
+                    enrollment_progress(data.enrollment_total, data.enrollment_capacity);
+        var content = {
+            title: event.title,
+            text:text
+        };
+        qtip_config.content = content;
+        element.qtip(qtip_config);
     }
 
     function removeEvents(ids){
@@ -478,16 +592,20 @@ var calendar = (function(){
                 var event_data = {
                     data : {
                         type: course_type,
-                        name: course_name
+                        name: course_name,
+                        weekdays:date["weekdays"],
+                        enrollment_capacity: obj["enrollment_capacity"],
+                        enrollment_total: obj["enrollment_total"],
+                        instructors: obj["classes"][0]["instructors"],
+                        location: obj["classes"][0]["location"]["building"] + " " + obj["classes"][0]["location"]["room"]
                     },
-                    title: obj["title"] + " - " + obj["section"],
+                    title: course_name + " - " + obj["section"],
                     id : id,
                     start: time_info["start"],
                     end: time_info["end"],
                     backgroundColor: course_data[course_name][color_str],
                     borderColor: course_data[course_name][color_str]
                 }
-                //console.log(course_type);
                 course_data[course_name][course_type].push(event_data);
             });
         });
@@ -515,12 +633,12 @@ var calendar = (function(){
 })();
 
 var color = (function(){
-    unselected = ["#57246B","#246B69","#6B4024","#1F4918","#BF4840","#6E74CF","#B83D91","#33993A","#309166","#283A77","#413091","#A9A2D7","#BABA5E","#2F5E6F","#3DECF5","#4309AE","#E8E12C","#7186EF","#6FF542","#09AA77","#13AA98","#F35912","#C2EBE1","#CE7DD4","#FFC7E6"];
-    selected = [];
+    var unselected = ["#09AA77","#13AA98","#1F4918","#246B69","#283A77","#2F5E6F","#309166","#33993A","#3DECF5","#413091","#4309AE","#57246B","#69ADE8","#6AEC8F","#6B4024","#6E74CF","#6FF542","#7186EF","#7DE8BF","#87D4D0","#8CEDD3","#A188EC","#A9A2D7","#AB2BDA","#B83D91","#B8B3E6","#BABA5E","#BF4840","#CE7DD4","#D043C2","#E8E12C","#F35912","#F7FF80","#FF706B","#FFB894","#FFBDF9","#FFC7E6","#FFD86B","#FFDA05"];
+    var selected = [];
 
     function next_color(){
         var color_str = unselected[random_number(0,unselected.length-1)];
-        selected.push[color_str];
+        selected.push(color_str);
         var index = unselected.indexOf(color_str);
         unselected.splice(index, 1);
         return color_str;

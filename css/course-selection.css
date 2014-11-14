@@ -1,3 +1,7 @@
+.class-full-border {
+    border: 2px solid #E50B28;
+    border-radius: 7px;
+}
 
 .calendar_widget{
     width:90%;
@@ -82,3 +86,17 @@ span {
 .tt-suggestion p {
   margin: 0;
 }
+
+
+#qtip-growl-container{
+    position: fixed;
+    top: 10px; right: 10px;
+}
+
+#qtip-growl-container .qtip{
+    position: static;
+    min-height: 0;
+    overflow: hidden;
+    margin: 0 0 5px 0;
+}
+

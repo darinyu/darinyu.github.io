@@ -168,3 +168,30 @@ License URL: http://creativecommons.org/licenses/by/3.0/
 </div>
 </body>
 </html>
+
+
+
+I create some additional placeholder events on dragStart event and would like to delete them when "drag" action stops. However, if I understand it correctly, DragStop and Drop have these key differences
+
+
+    1. Drag stop is called before Drop
+    2. Drag stop is guaranteed to be called (even if the event does not move) whileas Drop
+       is not called if the event does not move(to a different slot)
+
+Now, as I mentioned, I created some events on drag start and want to delete them. However, I do want to check if the moving object overlap with those temporary-added events. Then it comes the problem,
+
+     It(DragStop) is triggered before the event's information has been modified
+
+So in dragstop I have no idea where the event is moved to, hence I can not verify whether it overlaps with other events. Also in this case Drop is not called because the event does not move.
+
+How does fullcalendar.js handle the case whether to call Drop or not? If I know how to get whether the event has moved (in DragStop event), I would be able to use original information and check overlapping of events.
+
+Does anybody know how to approach this case? It seems to me that this is a very awkward edge case.
+
+
+                console.log("this     start: " + start_this);
+                console.log("this     end: " + end_this);
+                console.log("comp     start: " + start_comp);
+                console.log("comp     end: " + end_comp);
+
+                console.log("result: " + (start_this.add(overlap_threshold, 'mins') >= end_comp) + " " + (start_comp.add(overlap_threshold, 'mins') >= end_this) );
