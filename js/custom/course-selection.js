@@ -271,7 +271,7 @@ var calendar = (function(){
             center: 'title',
             right: ''
         },
-        slotDuration: '00:20:00',
+        slotDuration: '00:30:00',
         titleFormat: '[UW Course Schedule]',
         weekends: false,
         editable: true,
@@ -345,7 +345,7 @@ var calendar = (function(){
         var start_this =  moment(my_event.start).add(5,'hours');
         var end_this = moment(my_event.end).add(5, 'hours');
 
-        var overlap_threshold = 30; //mins
+        var overlap_threshold = 20; //mins
         $.each(array, function(index, comp_event){
             if (has_overlap) return;
             if(comp_event.id != event.id && comp_event.id === 0){
