@@ -4575,10 +4575,10 @@ $.extend(Grid.prototype, {
 					view.destroyDrag();
 					view.showEvent(event);
 					view.trigger('eventDragStop', el[0], event, ev, {}); // last argument is jqui dummy
-
-					if (hasChanged) {
+					//always fire eventDrop
+					//if (hasChanged) {
 						view.eventDrop(el[0], event, newStart, ev); // will rerender all events...
-					}
+					//}
 				});
 			},
 			listenStop: function() {
@@ -4615,7 +4615,7 @@ $.extend(Grid.prototype, {
 			newStart = dropDate;
 			newEnd = null; // end should be cleared
 		}
-
+		console.log();
 		return { start: newStart, end: newEnd };
 	},
 

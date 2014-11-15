@@ -21,11 +21,21 @@ function hide_qtip(){
 }
 
 function disable_qtip(){
-    $('.qtip').qtip('disable');
+    $('.qtip').each(function(){
+        $(this).qtip('api').disable(true);
+    });
+}
+
+function disable_qtip_when_dragging(){
+    $(".ui-draggable-dragging").each(function(){
+        $(this).qtip('api').disable(true);
+    });
 }
 
 function enable_qtip(){
-    $('.qtip').qtip('enable');
+    $('.qtip').each(function(){
+        $(this).qtip('api').enable(true);
+    });
 }
 
 function merge_options(obj1,obj2){
@@ -328,12 +338,13 @@ var calendar = (function(){
             settings["events"] = event_config;
         };
         cls = $('#calendar');
-        settings["eventDragStart"] = eventDragStart;
-        settings["eventDragStop"] = eventDragStop;
-        settings["eventDrop"] = eventDrop;
-        settings["eventClick"] = eventClick;
-        settings["eventRender"] = eventRender;
-        //console.log(JSON.stringify(settings, null, "\t"));
+        $.extend(settings,{
+            eventDragStart : eventDragStart,
+            eventDragStop : eventDragStop,
+            eventDrop : eventDrop,
+            eventClick : eventClick,
+            eventRender : eventRender
+        });
         cls.fullCalendar(settings);
     }
 
@@ -348,7 +359,8 @@ var calendar = (function(){
         var overlap_threshold = 20; //mins
         $.each(array, function(index, comp_event){
             if (has_overlap) return;
-            if(comp_event.id != event.id && comp_event.id === 0){
+            if (!comp_event) return;
+            if(comp_event.id != my_event.id && comp_event.id === 0){
                 var end_comp = moment(comp_event.end);
                 var start_comp = moment(comp_event.start);
                 if (!( (start_this.add(overlap_threshold, 'mins') >= end_comp) ||
@@ -360,7 +372,7 @@ var calendar = (function(){
                 }
             }
         });
-        console.log("has_overlap: " + has_overlap);
+        //console.log("has_overlap: " + has_overlap);
         return {
             has_overlap:has_overlap,
             id:id,
@@ -380,9 +392,9 @@ var calendar = (function(){
         cls.fullCalendar('renderEvent', event_data, true);
     }
 
-    function eventDragStart(event){
+    function eventDragStart(event,jsEvent){
         drag_has_overlap = false;
-        console.log("DragStart");
+        //console.log("DragStart");
         var course_type = event.data.type;
         var course_name = event.data.name;
         var id = event.id;
@@ -401,23 +413,28 @@ var calendar = (function(){
         })
         renderBatchEvents(placeholder_events);
 
+        console.log();
+        $(this).qtip('disable');
         hide_qtip();
         disable_qtip();
+        disable_qtip_when_dragging();
     }
 
     function eventDragStop(event){
-        console.log("dragstop")
+        //console.log("dragstop");
     }
 
-    function eventDrop(event, delta, revertFunc){
+    function eventDrop(event, delta, revertFunc, jsEvent){
         //handle qtip
+        //console.log(jsEvent.target);
         hide_qtip();
         //enable_qtip();
-         console.log("DragDrop");
+        //console.log("DragDrop");
 
         snap_info = snap_to_placeholder(event);
 
         if (!snap_info["has_overlap"]){
+            console.log("revert");
             revertFunc();
         } else {
             removeEvents([event.id]);
@@ -440,7 +457,7 @@ var calendar = (function(){
     }
 
     function eventClick(data, event, view) {
-            console.log("eventClicked");
+        //console.log("eventClicked");
     }
 
 
@@ -461,7 +478,6 @@ var calendar = (function(){
             } else {
                 percentage = Math.floor(total * 100.0 / cap);
             }
-            //console.log("percentage: " + percentage);
             var bar_type = "success";
             if (percentage > 90){
                 bar_type = "danger";
@@ -475,7 +491,6 @@ var calendar = (function(){
                          '<span class="sr-only">'+percentage+'% Complete</span>'+
                          total + " / " + cap +'</div>'+
                          '</div><br>';
-            //console.log("enroll format: " + format);
             return format;
         }
 
@@ -512,7 +527,7 @@ var calendar = (function(){
         cls.fullCalendar( 'rerenderEvents' );
     }
 
-    function refresh(){
+    function clear(){
         removeEvents();
     }
 
@@ -625,7 +640,7 @@ var calendar = (function(){
     return {
         init:init,
         removeEvents:removeEvents,
-        refresh:refresh,
+        clear:clear,
         removePlaceholderEvents:removePlaceholderEvents,
         addEvent:addEvent,
         processScheduleResponse:processScheduleResponse
@@ -678,13 +693,14 @@ var init = function(){
 
     calendar.init();
     courses.init();
+
 };
 
 function on_form_submmit(e){
     var selected_courses = [];
 
     function add_courses_to_calendar(){
-        calendar.refresh();
+        calendar.clear();
         color.clear();
         selected_courses.forEach(function(entry){
                 var arr = entry.split(/\s+/);
@@ -700,5 +716,6 @@ function on_form_submmit(e){
         selected_courses.push(this.getAttribute("value"));
     });
     add_courses_to_calendar();
+        disable_qtip();
     return false;
 }
