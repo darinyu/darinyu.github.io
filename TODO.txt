@@ -1,0 +1,16 @@
+1. Show placeholder qtip instead of dragging one
+2. [done] Script that generates class list:
+    name:
+    description:
+3.  clear list,
+4. update fullcalendar,  use business hour and event constraint to fix UI
+5. error message
+
+Bug:
+1.drag revert does not work
+2. cs245, need to be capitalized
+3. online courses crash
+
+
+CLEANUP CODE!!!
+

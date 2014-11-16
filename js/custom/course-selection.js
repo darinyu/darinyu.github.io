@@ -104,9 +104,10 @@ var select_obj = (function(){
     var _length = 0;
     var _id;
 
-    function init( id ){
-        _id = id;
-        list = $("select, #"+id);
+    function init(){
+        console.log("select_obj init called");
+        _id = "course_list";
+        list = $("select, #"+_id);
         list.selecter();
         hide_empty_list()
     }
@@ -159,8 +160,6 @@ var select_obj = (function(){
     }
 })();
 
-var course_list = ["CS145","CS135","CS245","MATH145","MATH135"];
-
 var courses= (function(){
     var input;
 
@@ -208,50 +207,35 @@ var courses= (function(){
             },
             queryTokenizer: Bloodhound.tokenizers.whitespace,
             limit: 5,
-            local: [
-                { name: 'CS 135'},
-                { name: 'CS 145'},
-                { name: 'CS 136'},
-                { name: 'CS 146'},
-                { name: 'CS 245'},
-                { name: 'CS 246'},
-                { name: 'CS 240'},
-                { name: 'CS 241'},
-                { name: 'CS 251'},
-                { name: 'PHYS 121'},
-                { name: 'MATH 135'},
-                { name: 'MATH 145'},
-                { name: 'MATH 147'},
-                { name: 'MATH 136'},
-                { name: 'MATH 146'},
-                { name: 'MATH 137'},
-                { name: 'MATH 138'},
-                { name: 'MATH 148'},
-                { name: 'MATH 235'},
-                { name: 'MATH 245'},
-                { name: 'MATH 239'},
-                { name: 'MATH 249'},
-                { name: 'MATH 237'},
-                { name: 'MATH 247'},
-                { name: 'MATH 137'},
-            ]
+            local: course_list
         });
 
         my_courses.initialize();
+
+        Handlebars.registerHelper('isOnlineCourse', function(block) {
+            if (this.offerings.online_only) {
+                return block.fn(this);
+            }
+        });
+        var suggestion_template = '<div class="label label-info pull-right">' +
+                                      '{{#isOnlineCourse}} Online only {{/isOnlineCourse}}' +
+                                  '</div> <div>{{name}}</div> <div style="font-size:14px">{{title}}</div>';
         input = $("#courses");
         input.typeahead({
-          hint: true,
-          highlight: true,
-          autoselect: true,
-          minLength: 1
+            hint: true,
+            highlight: true,
+            autoselect: true,
+            minLength: 1
         }, {
-          displayKey: 'name',
-          source: my_courses.ttAdapter()
+            displayKey: 'name',
+            source: my_courses.ttAdapter(),
+            templates: {
+                suggestion: Handlebars.compile( suggestion_template )
+            }
         }).on('typeahead:selected typeahead:autocompleted', select)
           .on('input', check_suggestion);
 
         input.on('keypress', function (e) {
-
             if (e.which === 13) {
                 e.preventDefault();
                 if (is_valid()){
@@ -426,7 +410,6 @@ var calendar = (function(){
 
     function eventDrop(event, delta, revertFunc, jsEvent){
         //handle qtip
-        //console.log(jsEvent.target);
         hide_qtip();
         //enable_qtip();
         //console.log("DragDrop");
@@ -545,8 +528,9 @@ var calendar = (function(){
             var weekday_string = ["M","T","W","Th","F"];
             var weekday_list=[];
             var weekdays_str = class_info["weekdays"];
-            //console.log("start get course time");
-            //console.log("weekdays_str: " + weekdays_str);
+            if (!weekdays_str){
+                return [];
+            }
             for (var i=0; i<weekday_string.length; i++){
                 if (weekdays_str.indexOf(weekday_string[i]) === 0){
                     if (weekday_string[i] === "T" && (weekdays_str.indexOf("Th") ===0)){
@@ -648,7 +632,7 @@ var calendar = (function(){
 })();
 
 var color = (function(){
-    var unselected = ["#09AA77","#13AA98","#1F4918","#246B69","#283A77","#2F5E6F","#309166","#33993A","#3DECF5","#413091","#4309AE","#57246B","#69ADE8","#6AEC8F","#6B4024","#6E74CF","#6FF542","#7186EF","#7DE8BF","#87D4D0","#8CEDD3","#A188EC","#A9A2D7","#AB2BDA","#B83D91","#B8B3E6","#BABA5E","#BF4840","#CE7DD4","#D043C2","#E8E12C","#F35912","#F7FF80","#FF706B","#FFB894","#FFBDF9","#FFC7E6","#FFD86B","#FFDA05"];
+    var unselected = ["#09AA77","#13AA98","#1F4918","#246B69","#283A77","#2F5E6F","#309166","#33993A","#3DECF5","#413091","#4309AE","#57246B","#69ADE8","#6AEC8F","#6B4024","#6E74CF","#6FF542","#7186EF","#7DE8BF","#87D4D0","#8CEDD3","#A188EC","#A9A2D7","#AB2BDA","#B83D91","#B8B3E6","#BABA5E","#BF4840","#CE7DD4","#D043C2","#E8E12C","#F35912","#F7FF80","#FF706B","#FFB894","#FFC7E6","#FFD86B","#FFDA05"];
     var selected = [];
 
     function next_color(){
@@ -672,10 +656,6 @@ var color = (function(){
 
 var init = function(){
     console.log("course-selection.init called");
-    $("#my_form").submit(on_form_submmit);
-
-    select_obj.init("course_list");
-
     var date = new Date();
     var d = date.getDate();
     var m = date.getMonth();
@@ -691,9 +671,10 @@ var init = function(){
         },
     ]; //TODO remove
 
+    select_obj.init();
     calendar.init();
     courses.init();
-
+    $("#my_form").submit(on_form_submmit);
 };
 
 function on_form_submmit(e){
