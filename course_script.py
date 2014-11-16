@@ -40,3 +40,10 @@ if __name__ == "__main__":
             data.append(course_info)
     with open('data.js', 'w') as outfile:
         json.dump(data, outfile)
+
+    course_info_dict = {}
+    for item in data:
+        course_info_dict[item.name] = item
+
+    with open('course_dict.js', 'w') as outfile:
+        json.dump(data, outfile)

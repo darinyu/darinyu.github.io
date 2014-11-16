@@ -20,24 +20,6 @@ function hide_qtip(){
     });
 }
 
-function disable_qtip(){
-    $('.qtip').each(function(){
-        $(this).qtip('api').disable(true);
-    });
-}
-
-function disable_qtip_when_dragging(){
-    $(".ui-draggable-dragging").each(function(){
-        $(this).qtip('api').disable(true);
-    });
-}
-
-function enable_qtip(){
-    $('.qtip').each(function(){
-        $(this).qtip('api').enable(true);
-    });
-}
-
 function merge_options(obj1,obj2){
     var obj3 = {};
     for (var attrname in obj1) { obj3[attrname] = obj1[attrname]; }
@@ -152,11 +134,22 @@ var select_obj = (function(){
         hide(!_length);
     }
 
+    function unselect_list(){
+        $("."+_id + " option:selected").removeAttr("selected");
+        $(".selecter, #"+_id).parent().find(".selecter-item.selected").removeClass("selected");
+    }
+
+    function update(){
+        list.selecter("update");
+    }
+
     return {
         init:init,
         add_item:add_item,
         remove_item: remove_item,
-        get_length: get_length
+        get_length: get_length,
+        unselect_list: unselect_list,
+        update: update
     }
 })();
 
@@ -188,7 +181,6 @@ var courses= (function(){
     function check_suggestion(){
         var length = $('.tt-suggestion').length;
         if (length === 0){
-            console.log("no suggestion");
             has_error();
         } else if (length === 1){
             has_success();
@@ -215,10 +207,20 @@ var courses= (function(){
         Handlebars.registerHelper('isOnlineCourse', function(block) {
             if (this.offerings.online_only) {
                 return block.fn(this);
+            } else {
+                return block.inverse(this);
             }
         });
+        Handlebars.registerHelper('hasOnlineCourse', function(block) {
+            if (this.offerings.online) {
+                return block.fn(this);
+            }
+        });
+
         var suggestion_template = '<div class="label label-info pull-right">' +
-                                      '{{#isOnlineCourse}} Online only {{/isOnlineCourse}}' +
+                                      '{{#isOnlineCourse}} Online Only {{else}}' +
+                                      '{{#hasOnlineCourse}} Has Online {{/hasOnlineCourse}}'+
+                                      '{{/isOnlineCourse}}' +
                                   '</div> <div>{{name}}</div> <div style="font-size:14px">{{title}}</div>';
         input = $("#courses");
         input.typeahead({
@@ -311,6 +313,7 @@ var calendar = (function(){
     var course_data = {};
     var tooptip;
     var snap_info;
+    var disable_tooltip = false;
 
     function init(event_config){
         date = moment();
@@ -378,6 +381,7 @@ var calendar = (function(){
 
     function eventDragStart(event,jsEvent){
         drag_has_overlap = false;
+        disable_tooltip = true;
         //console.log("DragStart");
         var course_type = event.data.type;
         var course_name = event.data.name;
@@ -396,22 +400,14 @@ var calendar = (function(){
             return ele;
         })
         renderBatchEvents(placeholder_events);
-
-        console.log();
-        $(this).qtip('disable');
-        hide_qtip();
-        disable_qtip();
-        disable_qtip_when_dragging();
     }
 
     function eventDragStop(event){
+        disable_tooltip = false;
         //console.log("dragstop");
     }
 
     function eventDrop(event, delta, revertFunc, jsEvent){
-        //handle qtip
-        hide_qtip();
-        //enable_qtip();
         //console.log("DragDrop");
 
         snap_info = snap_to_placeholder(event);
@@ -490,7 +486,9 @@ var calendar = (function(){
             text:text
         };
         qtip_config.content = content;
-        element.qtip(qtip_config);
+        if (!disable_tooltip || event.annotation){
+            element.qtip(qtip_config);
+        }
     }
 
     function removeEvents(ids){
@@ -559,7 +557,6 @@ var calendar = (function(){
 
             return class_list;
         }
-
 
         //TODO check response;
         var data = response["data"];
@@ -632,7 +629,7 @@ var calendar = (function(){
 })();
 
 var color = (function(){
-    var unselected = ["#09AA77","#13AA98","#1F4918","#246B69","#283A77","#2F5E6F","#309166","#33993A","#3DECF5","#413091","#4309AE","#57246B","#69ADE8","#6AEC8F","#6B4024","#6E74CF","#6FF542","#7186EF","#7DE8BF","#87D4D0","#8CEDD3","#A188EC","#A9A2D7","#AB2BDA","#B83D91","#B8B3E6","#BABA5E","#BF4840","#CE7DD4","#D043C2","#E8E12C","#F35912","#F7FF80","#FF706B","#FFB894","#FFC7E6","#FFD86B","#FFDA05"];
+    var unselected = ["#09AA77","#13AA98","#246B69","#283A77","#2F5E6F","#309166","#33993A","#3DECF5","#413091","#4309AE","#57246B","#69ADE8","#6AEC8F","#6B4024","#6E74CF","#6FF542","#7186EF","#7DE8BF","#87D4D0","#8CEDD3","#A188EC","#A9A2D7","#AB2BDA","#B83D91","#B8B3E6","#BABA5E","#BF4840","#CE7DD4","#D043C2","#E8E12C","#F35912","#FF706B","#FFB894","#FFC7E6","#FFD86B","#FFDA05"];
     var selected = [];
 
     function next_color(){
@@ -644,8 +641,11 @@ var color = (function(){
     }
 
     function clear(){
-        unselected.concat(selected);
+        $.each(selected, function(index, obj){
+            unselected.push(clone(obj));
+        });
         selected = [];
+        return;
     }
 
     return {
@@ -675,7 +675,14 @@ var init = function(){
     calendar.init();
     courses.init();
     $("#my_form").submit(on_form_submmit);
+    $("#unselect_course_btn").click(on_list_unselect);
 };
+
+function on_list_unselect(e){
+    console.log("here");
+    select_obj.unselect_list();
+    on_form_submmit(e);
+}
 
 function on_form_submmit(e){
     var selected_courses = [];
@@ -692,11 +699,11 @@ function on_form_submmit(e){
     }
     if (e.preventDefault) e.preventDefault();
     console.log("form submitted");
+    console.log(e);
 
     $('.course_list option:selected').each(function(){
-        selected_courses.push(this.getAttribute("value"));
+        selected_courses.push(this.getAttribute("value").toUpperCase());
     });
     add_courses_to_calendar();
-        disable_qtip();
     return false;
 }
