@@ -570,7 +570,7 @@ var calendar = (function(){
         }
 
         var arrangetment_found = false;
-        function check_overlap(event_list){
+        function events_have_overlap(event_list){
             //TODO
 /*
                  var array = cls.fullCalendar('clientEvents');
@@ -597,13 +597,44 @@ var calendar = (function(){
             }
         });
 */
+
+            var has_overlap = false;
+            var len = event_list.length;
+            for (var i=0; i<len; i++)
+                for (var j=i+1; j<len; j++){
+                    if (event_list[i].data.type == "LEC" || event_list[j].data.type=="LEC") continue;
+                    if (has_overlap) break;
+                    var start_i = moment(event_list[i].start);
+                    var start_j = moment(event_list[j].start);
+                    var end_i = moment(event_list[i].end);
+                    var end_j = moment(event_list[j].end);
+                    console.log("here");
+                    console.log(format(event_list[i]));
+                    console.log(format(event_list[j]));
+                    console.log(start_i);
+                    console.log(end_i);
+                    console.log(start_j);
+                    console.log(end_j);
+
+                    if (!((start_i >= end_j) || (start_j >= end_i))){
+                        has_overlap = true;
+                    }
+                }
+            console.log("has_overlap: " + has_overlap);
+            return has_overlap;
         }
 
         function auto_arrange_course(depth,complete_course_list,events_list){
             if (arrangetment_found) {return};
             if (depth >= complete_course_list.length){
-                console.log("events_list: " + format(events_list));
-                arrangetment_found = true;
+                if (!events_have_overlap(events_list)){
+                    console.log("found!");
+
+                    arrangetment_found = true;
+                    arranged_events = clone(events_list);
+                    console.log(format(arranged_events));
+                }
+
                 return;
             }
             for (var i=0; i<complete_course_list[depth].length; i++){
@@ -616,7 +647,7 @@ var calendar = (function(){
         //TODO check response;
         var data = response["data"];
         var course_type_array = ["LEC","TUT","LAB"];//,"TST"];
-        var events = [];
+        var events = arranged_events = events_list = [];
         var course_name = data[0]["subject"] + data[0]["catalog_number"];
 
         course_data[course_name] = {
@@ -673,7 +704,7 @@ var calendar = (function(){
             console.log("ha?");
             //console.log("flattened_course_array: " + format(flattened_course_array));
             console.log("how many sections? " + flattened_course_array.length);
-            var events_list = [];
+            events_list = [];
             arrangetment_found = false;
             auto_arrange_course(0,flattened_course_array,events_list);
         }
