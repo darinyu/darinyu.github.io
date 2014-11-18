@@ -769,7 +769,9 @@ var init = function(){
 };
 
 function on_list_unselect(e){
+    console.log(1);
     select_obj.unselect_list();
+    console.log(2);
     on_form_submmit(e);
 }
 
@@ -780,12 +782,16 @@ function on_form_submmit(e){
         calendar.clear();
         color.clear();
         calendar.setNumberCourses(selected_courses.length);
-        selected_courses.forEach(function(entry){
-                var arr = entry.split(/\s+/);
-                var subject = arr[0];
-                var catalog_number = arr[1];
-                uw_api.getCourseSchedule(subject, catalog_number, calendar.processScheduleResponse);
-        });
+        if (selected_courses.length){
+            selected_courses.forEach(function(entry){
+                    var arr = entry.split(/\s+/);
+                    var subject = arr[0];
+                    var catalog_number = arr[1];
+                    uw_api.getCourseSchedule(subject, catalog_number, calendar.processScheduleResponse);
+            });
+        } else {
+            submit_btn.stop_spin();
+        }
     }
     if (e.preventDefault) e.preventDefault();
     submit_btn.start_spin();
@@ -794,6 +800,7 @@ function on_form_submmit(e){
         selected_courses.push(this.getAttribute("value").toUpperCase());
     });
     add_courses_to_calendar();
+
     return false;
 
 }
