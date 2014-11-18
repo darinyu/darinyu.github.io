@@ -112,9 +112,12 @@ var select_obj = (function(){
         var item = get_item(value);
         if (!item.length || allow_duplicate){
             list.append('<option value="' + value + '">'+value+'</option>');
+
             _length++;
         }
         list.selecter('refresh');
+        $("span[data-value='"+value+"']").click();
+
         hide_empty_list()
     }
 
@@ -135,8 +138,7 @@ var select_obj = (function(){
     }
 
     function unselect_list(){
-        $("."+_id + " option:selected").removeAttr("selected");
-        $(".selecter, #"+_id).parent().find(".selecter-item.selected").removeClass("selected");
+        $("span.selecter-item.selected").click()
     }
 
     function update(){
@@ -311,11 +313,11 @@ var calendar = (function(){
     var count = 3;
     var date,y,m,d;
     var course_data = {};
-    var tooptip;
-    var snap_info;
+    var snap_info = {};
     var tooltip_disabled = false;
     var flattened_course_array = [];
-    var course_list_length = num_course_responded = 0;
+    var course_list_length;
+    var num_course_responded = 0;
 
     function init(event_config){
         date = moment();
@@ -389,9 +391,13 @@ var calendar = (function(){
         var course_type = event.data.type;
         var course_name = event.data.name;
         var id = event.id;
-        var my_list = course_data[course_name][course_type].filter(function(element){
-            return element.id !== id;
-        });
+        var my_list = [];
+        var this_course = course_data[course_name][course_type];
+        for (var i=0; i<this_course.length; i++){
+            if (this_course[i][0].id !== id){
+                my_list = my_list.concat(this_course[i]);
+            }
+        }
         var placeholder_events = my_list.map(function(element){
             var ele = clone(element);
             ele["color"] = placeholder_background_color;
@@ -424,16 +430,9 @@ var calendar = (function(){
             var course_name = event.data.name;
             var id = snap_info.id;
             var events = course_data[course_name][course_type].filter(function(element){
-                return element.id === id;
+                return element[0].id === id;
             });
-            var event_data = {
-                title: "new Event",
-                start: snap_info.start,
-                end: snap_info.end,
-                backgroundColor: event.backgroundColor,
-                id: event.id,
-            };
-            renderBatchEvents(events);
+            renderBatchEvents(events[0]);
         }
         removePlaceholderEvents();
     }
@@ -507,7 +506,6 @@ var calendar = (function(){
     }
 
     function rerenderEvents(){
-        console.log("ha?");
         cls.fullCalendar( 'rerenderEvents' );
     }
 
@@ -515,6 +513,8 @@ var calendar = (function(){
         removeEvents();
         course_data = {};
         flattened_course_array = [];
+        snap_info = {};
+        tooltip_disabled = false;
         course_list_length = num_course_responded = 0;
     }
 
@@ -528,7 +528,6 @@ var calendar = (function(){
 
     function setNumberCourses(number){
         course_list_length = number;
-        console.log("number:" + number);
     }
 
     function processScheduleResponse(response){
@@ -571,56 +570,20 @@ var calendar = (function(){
 
         var arrangetment_found = false;
         function events_have_overlap(event_list){
-            //TODO
-/*
-                 var array = cls.fullCalendar('clientEvents');
-        var has_overlap = false;
-        var start,end,id;
-        //event_obj from drag is in diff timezone, hence need offset
-        var start_this =  moment(my_event.start).add(5,'hours');
-        var end_this = moment(my_event.end).add(5, 'hours');
-
-        var overlap_threshold = 20; //mins
-        $.each(array, function(index, comp_event){
-            if (has_overlap) return;
-            if (!comp_event) return;
-            if(comp_event.id != my_event.id && comp_event.id === 0){
-                var end_comp = moment(comp_event.end);
-                var start_comp = moment(comp_event.start);
-                if (!( (start_this.add(overlap_threshold, 'mins') >= end_comp) ||
-                       (start_comp.add(overlap_threshold, 'mins') >= end_this) )){
-                    has_overlap = true;
-                    id = comp_event["data"]["original_id"];
-                    start = start_comp;
-                    end = end_comp;
-                }
-            }
-        });
-*/
-
             var has_overlap = false;
             var len = event_list.length;
             for (var i=0; i<len; i++)
                 for (var j=i+1; j<len; j++){
-                    if (event_list[i].data.type == "LEC" || event_list[j].data.type=="LEC") continue;
+                    //if (event_list[i].data.type == "LEC" || event_list[j].data.type=="LEC") continue;
                     if (has_overlap) break;
                     var start_i = moment(event_list[i].start);
                     var start_j = moment(event_list[j].start);
                     var end_i = moment(event_list[i].end);
                     var end_j = moment(event_list[j].end);
-                    console.log("here");
-                    console.log(format(event_list[i]));
-                    console.log(format(event_list[j]));
-                    console.log(start_i);
-                    console.log(end_i);
-                    console.log(start_j);
-                    console.log(end_j);
-
                     if (!((start_i >= end_j) || (start_j >= end_i))){
                         has_overlap = true;
                     }
                 }
-            console.log("has_overlap: " + has_overlap);
             return has_overlap;
         }
 
@@ -628,26 +591,27 @@ var calendar = (function(){
             if (arrangetment_found) {return};
             if (depth >= complete_course_list.length){
                 if (!events_have_overlap(events_list)){
-                    console.log("found!");
-
                     arrangetment_found = true;
-                    arranged_events = clone(events_list);
-                    console.log(format(arranged_events));
+                    arranged_events = [].concat(events_list);
                 }
-
                 return;
             }
             for (var i=0; i<complete_course_list[depth].length; i++){
-                events_list.push(complete_course_list[depth][i]);
+                var added_length = complete_course_list[depth][i].length;
+                events_list = events_list.concat(complete_course_list[depth][i]);
                 auto_arrange_course(depth+1, complete_course_list, events_list);
-                events_list.pop();
+                for (var j=0;j<added_length;j++){
+                    events_list.pop();
+                }
             }
         }
 
         //TODO check response;
         var data = response["data"];
         var course_type_array = ["LEC","TUT","LAB"];//,"TST"];
-        var events = arranged_events = events_list = [];
+        var events = [];
+        var arranged_events = [];
+        var events_list = [];
         var course_name = data[0]["subject"] + data[0]["catalog_number"];
 
         course_data[course_name] = {
@@ -664,6 +628,9 @@ var calendar = (function(){
             var color_str = course_type + "_color";
             if (!(color_str in course_data[course_name])){
                 course_data[course_name][color_str] = color.next_color();
+                //console.log("course_data color? Y" + course_data[course_name][color_str]);
+            } else {
+                //console.log("course_data color? N" + course_data[course_name][color_str]);
             }
             var class_info = {
                 start_time: date["start_time"],
@@ -671,6 +638,7 @@ var calendar = (function(){
                 weekdays: date["weekdays"]
             }
             var my_list = get_course_time_info(class_info);
+            var classes = [];
             $.each(my_list, function(index, time_info){
                 var event_data = {
                     data : {
@@ -689,10 +657,12 @@ var calendar = (function(){
                     backgroundColor: course_data[course_name][color_str],
                     borderColor: course_data[course_name][color_str]
                 }
-                course_data[course_name][course_type].push(event_data);
+                classes.push(event_data);
+                //console.log("event_data? " + format(event_data));
             });
+            course_data[course_name][course_type].push(classes);
         });
-        //plan course start
+
         $.each(course_type_array, function(index, course_type){
             if (course_data[course_name][course_type].length){
                 flattened_course_array.push(course_data[course_name][course_type]);
@@ -701,26 +671,19 @@ var calendar = (function(){
 
         num_course_responded = num_course_responded + 1;
         if (num_course_responded >= course_list_length){
-            console.log("ha?");
-            //console.log("flattened_course_array: " + format(flattened_course_array));
-            console.log("how many sections? " + flattened_course_array.length);
+            submit_btn.stop_spin();
             events_list = [];
             arrangetment_found = false;
             auto_arrange_course(0,flattened_course_array,events_list);
-        }
-        //plan course end
-
-
-        $.each(course_type_array, function(index, course_type){
-            if (course_data[course_name][course_type].length){
-                var id = course_data[course_name][course_type][0].id;
-                var my_events = course_data[course_name][course_type].filter(function(element){
-                    return element.id === id;
-                });
-                events = events.concat(my_events);
+            if (!(arranged_events.length)){
+                for (var i=0; i<flattened_course_array.length; i++){
+                    arranged_events = arranged_events.concat(flattened_course_array[i][0]);
+                }
             }
-        });
-        renderBatchEvents(events);
+            //console.log("ready! " + format(arranged_events));
+            renderBatchEvents(arranged_events);
+            return;
+        }
     }
 
     return {
@@ -739,7 +702,8 @@ var color = (function(){
     var selected = [];
 
     function next_color(){
-        var color_str = unselected[random_number(0,unselected.length-1)];
+        var index = random_number(0,unselected.length-1);
+        var color_str = unselected[index];
         selected.push(color_str);
         var index = unselected.indexOf(color_str);
         unselected.splice(index, 1);
@@ -748,7 +712,7 @@ var color = (function(){
 
     function clear(){
         $.each(selected, function(index, obj){
-            unselected.push(clone(obj));
+            unselected.push(obj);
         });
         selected = [];
         return;
@@ -757,6 +721,25 @@ var color = (function(){
     return {
         next_color:next_color,
         clear:clear
+    }
+})();
+
+var submit_btn=(function(){
+    var l;
+    function init(){
+        console.log("submit_btn init called");
+        l = Ladda.create( document.querySelector( '#form_submit_btn' ) );
+    }
+    function start_spin(){
+        l.start();
+    }
+    function stop_spin(){
+        l.stop();
+    }
+    return {
+        init:init,
+        start_spin:start_spin,
+        stop_spin:stop_spin
     }
 })();
 
@@ -780,12 +763,12 @@ var init = function(){
     select_obj.init();
     calendar.init();
     courses.init();
+    submit_btn.init()
     $("#my_form").submit(on_form_submmit);
     $("#unselect_course_btn").click(on_list_unselect);
 };
 
 function on_list_unselect(e){
-    console.log("here");
     select_obj.unselect_list();
     on_form_submmit(e);
 }
@@ -805,8 +788,8 @@ function on_form_submmit(e){
         });
     }
     if (e.preventDefault) e.preventDefault();
+    submit_btn.start_spin();
     console.log("form submitted");
-
     $('.course_list option:selected').each(function(){
         selected_courses.push(this.getAttribute("value").toUpperCase());
     });

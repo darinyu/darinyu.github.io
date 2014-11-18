@@ -1,136 +1,42 @@
+ <!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>Ladda Examples - expand left,right, top or bottom</title>
+<link href="css/ladda-themeless.min.css" rel="stylesheet" >
+        <!-- demo stylesheet for this page only -->
+    </head>
+    <body>
+        <article class="examples">
+            <div class="intro">
+                <h1>Ladda Examples - expand left,right, top or bottom</h1>
+                <p>Click on any of the buttons below</p>
+            </div>
 
-<!--A Design by W3layouts
-Author: W3layout
-Author URL: http://w3layouts.com
-License: Creative Commons Attribution 3.0 Unported
-License URL: http://creativecommons.org/licenses/by/3.0/
--->
-<!DOCTYPE HTML>
-<html>
-<head>
-<title>DaDa's Place</title>
+            <section>
+                <h3>expand-left</h3>
+                <button class="ladda-button" data-color="green" data-style="expand-left"><span class="ladda-label">Submit</span></button>
+            </section>
 
-<link href="fonts/css/font-awesome.min.css" rel="stylesheet" >
-<link href='http://fonts.googleapis.com/css?family=Kreon:300,400,700' rel='stylesheet' type='text/css'>
-<link href="css/style.css" rel="stylesheet" type="text/css" media="all" />
-<link href="css/course-selection.css" rel="stylesheet" type="text/css" media="all" />
-<link href="css/bootstrap.min.css" rel="stylesheet">
-<link href="css/jquery.fs.selecter.min.css" rel="stylesheet" >
-<link href="css/bootstrapValidator.min.css" rel="stylesheet" />
-<link href="css/fullcalendar.min.css" rel="stylesheet" />
-<link href="css/jquery.qtip.min.css" rel="stylesheet" />
+        </article>
+<script type="text/javascript" src="js/spin.min.js"></script>
+<script type="text/javascript" src="js/ladda.min.js"></script>
 
-
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<script type="application/x-javascript"> addEventListener("load", function() { setTimeout(hideURLbar, 0); }, false); function hideURLbar(){ window.scrollTo(0,1); } </script>
- <!--[if lt IE 9]>
-     <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
-     <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
-<![endif]-->
-
-<!-- start plugins -->
-<script type="text/javascript" src="js/jquery-1.11.1.min.js"></script>
-<script src="js/custom/course-selection.js" type="text/javascript"></script>
-<script type="text/javascript" src="js/bootstrap.min.js"></script>
-<script type="text/javascript" src="js/typeahead.bundle.min.js"></script>
-<script type="text/javascript" src="js/jquery.fs.selecter.min.js"></script>
-<script type="text/javascript" src="js/moment.min.js"></script>
-<script type="text/javascript" src="js/fullcalendar_patched.js"></script>
-<script type="text/javascript" src="js/jquery.qtip.js"></script>
-<script type="text/javascript" src="js/handlebars-v2.0.0.js"></script>
-<script type="text/javascript" src="data.js"></script>
+        <script>
+            // Bind normal buttons
+            Ladda.bind( 'section:not(.progress-demo) button', { timeout: 2000 } );
 
 
+            // You can control loading explicitly using the JavaScript API
+            // as outlined below:
 
+            // var l = Ladda.create( document.querySelector( 'button' ) );
+            // l.start();
+            // l.stop();
+            // l.toggle();
+            // l.isLoading();
+            // l.setProgress( 0-1 );
 
-<script>
-    $(function() {
-        var pull        = $('#pull');
-            menu        = $('nav ul');
-            menuHeight  = menu.height();
-        $(pull).on('click', function(e) {
-            e.preventDefault();
-            menu.slideToggle();
-        });
-        $(window).resize(function(){
-            var w = $(window).width();
-            if(w > 320 && menu.is(':hidden')) {
-                menu.removeAttr('style');
-            }
-        });
-    });
-    $(document).ready(function() {
-var my_courses = new Bloodhound({
-            datumTokenizer: function(d) {
-                var temp_list = Bloodhound.tokenizers.whitespace(d.name);
-                var str = temp_list[0] + temp_list[1]; // CS + 245
-                temp_list.push(str);
-                return temp_list;
-            },
-            queryTokenizer: Bloodhound.tokenizers.whitespace,
-            limit: 5,
-            local: course_list
-        });
-
-        my_courses.initialize();
-        $('#custom-templates .typeahead').typeahead({
-            hint: true,
-            highlight: true,
-            autoselect: true,
-            minLength: 1
-        }, {
-  name: 'best-pictures',
-  displayKey: 'name',
-  source: my_courses.ttAdapter(),
-  templates: {
-    empty: [
-      '<div class="empty-message">',
-      'unable to find any Best Picture winners that match the current query',
-      '</div>'
-    ].join('\n'),
-    suggestion: Handlebars.compile('<p><strong>{{name}}</strong>: {{description}}</p>')
-  }
-});
-/*
-var my_courses = new Bloodhound({
-            datumTokenizer: function(d) {
-                var temp_list = Bloodhound.tokenizers.whitespace(d.name);
-                var str = temp_list[0] + temp_list[1]; // CS + 245
-                temp_list.push(str);
-                return temp_list;
-            },
-            queryTokenizer: Bloodhound.tokenizers.whitespace,
-            limit: 5,
-            local: course_list
-        });
-
-        my_courses.initialize();
-
-        input = $("#courses");
-        input.typeahead({
-            hint: true,
-            highlight: true,
-            autoselect: true,
-            minLength: 1
-        }, {
-            displayKey: 'name',
-            source: my_courses.ttAdapter(),
-            template: {
-                suggestion: Handlebars.compile( '<p><strong>{{name}}</strong> – {{description}}</p>')
-            }
-
-        }).on('typeahead:selected typeahead:autocompleted', select)
-          .on('input', check_suggestion);
-*/
-    });
-
- </script>
-
-</head>
-<body>
-<div id="custom-templates">
-  <input class="typeahead" type="text" placeholder="Oscar winners for Best Picture">
-</div>
-
-</body>
+        </script>
+    </body>
 </html>
