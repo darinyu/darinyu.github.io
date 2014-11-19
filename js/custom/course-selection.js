@@ -597,6 +597,7 @@ var calendar = (function(){
         }
 
         var arrangement_found = false;
+        var arranged_events = [];
         function event_has_overlap(cur_event, event_list){
             var start_i = moment(cur_event.start);
             var end_i = moment(cur_event.end);
@@ -639,21 +640,41 @@ var calendar = (function(){
             }
         }
 
+
+        function prepare_for_search(){
+            submit_btn.stop_spin();
+            arrangement_found = false;
+            arranged_events = [];
+            async(function(){
+                auto_arrange_course(0, flattened_course_array, []);
+            }, function(){
+                alertify.set({delay: 3000});
+                if (!(arranged_events.length)){
+                    for (var i=0; i<flattened_course_array.length; i++){
+                        arranged_events = arranged_events.concat(flattened_course_array[i][0]);
+                    }
+                    alertify.error("I am telling you human, there is no non-conflicting schedule.");
+                } else {
+                    alertify.success("Hey, I just found you a non-conflicting schedule.");
+                }
+                renderBatchEvents(arranged_events);
+            })
+        }
+
         //TODO check response;
         var data = response["data"];
         if (!data.length){
-            num_course_not_found.push(name_from_list);
-            if (num_course_responded + num_course_not_found.length >= course_list_length){
-                submit_btn.stop_spin();
-            }
             alertify.set({delay: 3000});
             alertify.error(name_from_list + " is not found. Perhaps it is not offered this term");
+            num_course_not_found.push(name_from_list);
+            if (num_course_responded + num_course_not_found.length >= course_list_length){
+                prepare_for_search();
+            }
             return;
         }
         var course_type_array = ["LEC","LAB", "TUT"];//,"TST"];
         var events = [];
         var arranged_events = [];
-        var events_list = [];
         var course_name = data[0]["subject"] + data[0]["catalog_number"];
 
         course_data[course_name] = {
@@ -721,25 +742,7 @@ var calendar = (function(){
 
         num_course_responded = num_course_responded + 1;
         if (num_course_responded + num_course_not_found.length >= course_list_length){
-            submit_btn.stop_spin();
-            events_list = [];
-            arrangement_found = false;
-            async(function(){
-                console.log("start");
-                auto_arrange_course(0,flattened_course_array,events_list);
-                console.log("end");
-            }, function(){
-                alertify.set({delay: 3000});
-                if (!(arranged_events.length)){
-                    for (var i=0; i<flattened_course_array.length; i++){
-                        arranged_events = arranged_events.concat(flattened_course_array[i][0]);
-                    }
-                    alertify.error("I am telling you human, there is no non-conflicting schedule.");
-                } else {
-                    alertify.success("Hey, I just found you a non-conflicting schedule.");
-                }
-                renderBatchEvents(arranged_events);
-            })
+            prepare_for_search();
             return;
         }
     }
