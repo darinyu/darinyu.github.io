@@ -597,35 +597,40 @@ var calendar = (function(){
         }
 
         var arrangement_found = false;
-        function events_have_overlap(event_list){
-            var has_overlap = false;
+        function event_has_overlap(cur_event, event_list){
+            var start_i = moment(cur_event.start);
+            var end_i = moment(cur_event.end);
             var len = event_list.length;
-            for (var i=0; i<len; i++)
-                for (var j=i+1; j<len; j++){
-                    //if (event_list[i].data.type == "LEC" || event_list[j].data.type=="LEC") continue;
-                    if (has_overlap) break;
-                    var start_i = moment(event_list[i].start);
-                    var start_j = moment(event_list[j].start);
-                    var end_i = moment(event_list[i].end);
-                    var end_j = moment(event_list[j].end);
-                    if (!((start_i >= end_j) || (start_j >= end_i))){
-                        has_overlap = true;
-                    }
+            for (var j=0; j<len; j++){
+                var start_j = moment(event_list[j].start);
+                var end_j = moment(event_list[j].end);
+                if (!((start_i >= end_j) || (start_j >= end_i))){
+                    return true;
                 }
-            return has_overlap;
+            }
+            return false;
         }
 
         function auto_arrange_course(depth,complete_course_list,events_list){
             if (arrangement_found) {return};
             if (depth >= complete_course_list.length){
-                if (!events_have_overlap(events_list)){
-                    arrangement_found = true;
-                    arranged_events = [].concat(events_list);
-                }
+                arrangement_found = true;
+                arranged_events = [].concat(events_list);
                 return;
             }
             for (var i=0; i<complete_course_list[depth].length; i++){
                 var added_length = complete_course_list[depth][i].length;
+                var overlapped = false;
+                for (var j=0; j<complete_course_list[depth][i].length; j++){
+                    var cur_event = complete_course_list[depth][i][j];
+                    if (event_has_overlap(cur_event, events_list)){
+                        overlapped = true;
+                        break;
+                    }
+                }
+                if (overlapped){
+                    continue;
+                }
                 events_list = events_list.concat(complete_course_list[depth][i]);
                 auto_arrange_course(depth+1, complete_course_list, events_list);
                 for (var j=0;j<added_length;j++){
@@ -858,7 +863,7 @@ function on_form_submmit(e){
         alertify.error(str);
         return false;
     }
-    alertify.log("Trying my best to arrange your course schedule...");
+    alertify.log("Trying my best to arrange your course schedule...", "", 3000);
     submit_btn.start_spin();
     add_courses_to_calendar();
 
