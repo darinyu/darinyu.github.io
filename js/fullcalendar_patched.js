@@ -4575,10 +4575,10 @@ $.extend(Grid.prototype, {
 					view.destroyDrag();
 					view.showEvent(event);
 					view.trigger('eventDragStop', el[0], event, ev, {}); // last argument is jqui dummy
-					//always fire eventDrop
-					//if (hasChanged) {
+
+					if (hasChanged) {
 						view.eventDrop(el[0], event, newStart, ev); // will rerender all events...
-					//}
+					}
 				});
 			},
 			listenStop: function() {
