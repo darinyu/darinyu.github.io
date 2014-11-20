@@ -21,6 +21,7 @@ License URL: http://creativecommons.org/licenses/by/3.0/
 <link href="css/jquery.qtip.min.css" rel="stylesheet" />
 <link href="css/ladda-themeless.min.css" rel="stylesheet" >
 <link href="css/alertify.bootstrap.css" rel="stylesheet"  />
+<link href="css/bootstrap-toggle.min.css" rel="stylesheet">
 
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script type="application/x-javascript"> addEventListener("load", function() { setTimeout(hideURLbar, 0); }, false); function hideURLbar(){ window.scrollTo(0,1); } </script>
@@ -44,6 +45,7 @@ License URL: http://creativecommons.org/licenses/by/3.0/
 <script type="text/javascript" src="js/spin.min.js"></script>
 <script type="text/javascript" src="js/ladda.min.js"></script>
 <script type="text/javascript" src="js/alertify.min.js"></script>
+<script type="text/javascript" src="js/bootstrap-toggle.min.js"></script>
 
 <script>
 	$(function() {
@@ -102,6 +104,10 @@ License URL: http://creativecommons.org/licenses/by/3.0/
             </div>
             <div class="col-md-3">
                     <form id="my_form">
+                    	<div class="form-group">
+                    		<label>Term</label> <br>
+                    		<input id="term_toggle" checked type="checkbox">
+                    	</div>
                         <div class="form-group has-feedback">
                             <label>Course ID</label>
                             <input type="text" class="form-control" name="courses" id="courses" placeholder="CS245"/>

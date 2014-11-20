@@ -60,10 +60,10 @@ var uw_api = (function () {
             });
     }
 
-    var getCourseSchedule = function(subject, catalog_number, cb){
+    var getCourseSchedule = function(subject, catalog_number, term_code, cb){
         var url = uw_api_url + "courses/" + subject + "/" + catalog_number + "/schedule.json";
         var course_name = subject + " " + catalog_number;
-        $.get( url, { key: uw_api_key })
+        $.get( url, { key: uw_api_key, term: term_code })
             .done(function( data ) {
                 cb(course_name, data);
                 last_request_successful = isSuccessfulReponse(data);
@@ -363,6 +363,7 @@ var calendar = (function(){
     }
 
     function eventDragStart(event,jsEvent){
+        placeholder_events_for_comparison = [];
         drag_has_overlap = false;
         hide_qtip();
         tooltip_disabled = true;
@@ -417,8 +418,8 @@ var calendar = (function(){
         //event_obj from drag is in diff timezone, hence need offset
         var start_this =  moment(my_event.start).add(5,'hours');
         var end_this = moment(my_event.end).add(5, 'hours');
-        console.log("start_this: " + start_this);
-        console.log("end_this: " + end_this);
+        //console.log("start_this: " + start_this);
+        //console.log("end_this: " + end_this);
         var overlap_threshold = 20; //mins
         $.each(array, function(index, comp_event){
             if (has_overlap) return;
@@ -447,7 +448,7 @@ var calendar = (function(){
     function eventDrop(event, delta, revertFunc, jsEvent){
         //console.log("DragDrop");
         snap_info = snap_to_placeholder(event);
-        console.log("snap_info: " + format(snap_info));
+        //console.log("snap_info: " + format(snap_info));
         if (!snap_info["has_overlap"]){
             console.log("revert");
             revertFunc();
@@ -543,7 +544,6 @@ var calendar = (function(){
         tooltip_disabled = false;
         course_list_length = num_course_responded = 0;
         num_course_not_found = [];
-        placeholder_events_for_comparison = [];
     }
 
     function removePlaceholderEvents(extra_ids){
@@ -804,29 +804,78 @@ var submit_btn=(function(){
     }
 })();
 
+var term_toggle = (function(){
+    var next_term_code;
+    var cur_term_code;
+
+    function format_month(x){
+        if (x >= 8){
+            return 9;
+        } else if (x >= 4) {
+            return 5;
+        } else
+            return 1;
+    }
+
+    function format_term_str(x){
+        if (x == 1) return "Winter";
+        if (x == 5) return "Spring";
+        if (x == 9) return "Fall";
+    }
+
+    function init(){
+        console.log("term_toggle.init called");
+
+        var base_str = "1"; //21st century.
+        var cur = moment();
+        var next = moment().add(4,'M');
+        var cur_year = cur.format("YY");
+        var next_year = next.format("YY");
+        var cur_month = format_month(cur.month());
+        var next_month = format_month(next.month());
+        cur_term_code = base_str + cur_year + cur_month;
+        var cur_title = format_term_str(cur_month) + " " + cur.format("YYYY");
+        next_term_code = base_str + next_year + next_month;
+        var next_title = format_term_str(next_month) + " " + next.format("YYYY");
+
+        //default to next term
+        $('#term_toggle').bootstrapToggle({
+            on: next_title,
+            off: cur_title,
+            offstyle:"info"
+        });
+    }
+
+    function is_next_term(){
+        return $("#term_toggle:checked").length;
+    }
+
+    function get_term_code(){
+        if (is_next_term()){
+            //console.log("next_term_code " + next_term_code);
+            return next_term_code;
+        } else {
+            //console.log("cur_term_code " + cur_term_code);
+            return cur_term_code;
+        }
+    }
+
+    return {
+        init:init,
+        get_term_code:get_term_code
+    }
+})();
+
 var init = function(){
     console.log("course-selection.init called");
-    var date = new Date();
-    var d = date.getDate();
-    var m = date.getMonth();
-    var y = date.getFullYear();
-
-    var events = [
-        {
-            title: 'Event',
-            start: moment({y:y, M:10, d:d, h:10}),
-            end: moment({y:y, M:10, d:d, h:12}),
-            description: 'long description',
-            id: 1
-        },
-    ]; //TODO remove
-
     select_obj.init();
     calendar.init();
     courses.init();
     submit_btn.init()
+    term_toggle.init();
     $("#my_form").submit(on_form_submmit);
     $("#unselect_course_btn").click(on_list_unselect);
+
 };
 
 function on_list_unselect(e){
@@ -841,13 +890,15 @@ function on_form_submmit(e){
     var max_num_course = 7;
 
     function add_courses_to_calendar(){
+        var term_code = term_toggle.get_term_code();
+        //console.log("term code: " + term_code);
         calendar.setNumberCourses(selected_courses.length);
         if (selected_courses.length){
             selected_courses.forEach(function(entry){
                     var arr = entry.split(/\s+/);
                     var subject = arr[0];
                     var catalog_number = arr[1];
-                    uw_api.getCourseSchedule(subject, catalog_number, calendar.processScheduleResponse);
+                    uw_api.getCourseSchedule(subject, catalog_number, term_code, calendar.processScheduleResponse);
             });
         } else {
             submit_btn.stop_spin();
