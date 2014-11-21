@@ -112,6 +112,7 @@ var select_obj = (function(){
             _length -= item.length;
             item.remove();
         }
+        console.log("length " + _length);
         list.selecter('refresh');
         hide_empty_list()
     }
@@ -125,8 +126,8 @@ var select_obj = (function(){
             return;
         }
         list.selecter('refresh');
+        hide_empty_list();
         $("span[data-value='"+value+"']").click();
-        hide_empty_list()
     }
 
     function get_length(){
@@ -135,9 +136,9 @@ var select_obj = (function(){
 
     function hide(to_hide){
         if (to_hide){
-            $(".selecter, #"+_id).parent().parent().addClass("invisible");
+            $(".selecter, #"+_id).parent().parent().addClass("hide");
         } else {
-            $(".selecter, #"+_id).parent().parent().removeClass("invisible");
+            $(".selecter, #"+_id).parent().parent().removeClass("hide");
         }
     }
 
@@ -153,10 +154,17 @@ var select_obj = (function(){
         list.selecter("update");
     }
 
+    function clear_list(){
+        $("select, #" + _id).find("option").remove();
+        _length = 0;
+        list.selecter('refresh');
+        hide_empty_list()
+    }
+
     return {
         init:init,
         add_item:add_item,
-        remove_item: remove_item,
+        clear_list: clear_list,
         get_length: get_length,
         unselect_list: unselect_list,
         update: update
@@ -326,7 +334,7 @@ var calendar = (function(){
     var flattened_course_array = [];
     var course_list_length;
     var num_course_responded = 0;
-    var num_course_not_found = [];
+    var course_with_no_schedule = [];
     var placeholder_events_for_comparison = [];
 
     function init(event_config){
@@ -543,7 +551,7 @@ var calendar = (function(){
         snap_info = {};
         tooltip_disabled = false;
         course_list_length = num_course_responded = 0;
-        num_course_not_found = [];
+        course_with_no_schedule = [];
     }
 
     function removePlaceholderEvents(extra_ids){
@@ -642,9 +650,15 @@ var calendar = (function(){
 
 
         function prepare_for_search(){
+            //console.log("flattened_array: " + format(flattened_course_array));
             submit_btn.stop_spin();
             arrangement_found = false;
             arranged_events = [];
+            if (!flattened_course_array.length){
+                alertify.set({delay: 3000});
+                alertify.error("No courses scheduled.");
+                return;
+            }
             async(function(){
                 auto_arrange_course(0, flattened_course_array, []);
             }, function(){
@@ -655,7 +669,7 @@ var calendar = (function(){
                     }
                     alertify.error("I am telling you human, there is no non-conflicting schedule.");
                 } else {
-                    alertify.success("Hey, I just found you a non-conflicting schedule.");
+                    alertify.success("Hey, I just found you a non-conflicting schedule. Be aware that some courses are not scheduled in campus");
                 }
                 renderBatchEvents(arranged_events);
             })
@@ -663,29 +677,54 @@ var calendar = (function(){
 
         //TODO check response;
         var data = response["data"];
+        var valid = true;
         if (!data.length){
             alertify.set({delay: 3000});
             alertify.error(name_from_list + " is not found. Perhaps it is not offered this term");
-            num_course_not_found.push(name_from_list);
-            if (num_course_responded + num_course_not_found.length >= course_list_length){
+            course_with_no_schedule.push(name_from_list);
+            valid = false;
+        }
+
+        //console.log("data: " + format(data));
+        //console.log(format(data[0]["classes"].date));
+        //check course available
+        if (valid && !(data.length && data[0] && data[0]["classes"].length && data[0]["classes"][0].date.start_time)){
+            alertify.set({delay: 3000});
+            alertify.error(name_from_list + " does not have a real schedule");
+            course_with_no_schedule.push(name_from_list);
+            valid = false;
+        }
+
+        if (num_course_responded + course_with_no_schedule.length >= course_list_length){
+            if (course_with_no_schedule.length == course_list.length){
+                alertify.set({delay:3000});
+                alertify.error("None of the selected courses is scheduled in campus");
+            } else {
                 prepare_for_search();
             }
+        }
+        if (!valid){
             return;
         }
-        var course_type_array = ["LEC","LAB", "TUT"];//,"TST"];
+
+        var course_type_array = [];
         var events = [];
         var arranged_events = [];
         var course_name = data[0]["subject"] + data[0]["catalog_number"];
 
-        course_data[course_name] = {
-            LEC: new Array(),
-            TUT: new Array(),
-            LAB: new Array(),
-            TST: new Array()
-        };
+        course_data[course_name] = {};
 
         $.each(data, function(index, obj){
             var course_type = obj["section"].substr(0,3);
+            if (course_type == "TST"){
+                return; //dont show TST in week view
+            }
+            if (!(course_type in course_data[course_name])){
+                course_data[course_name][course_type] = new Array();
+            }
+            if (course_type_array.indexOf(course_type) == -1){
+                course_type_array.push(course_type);
+            }
             var id = course_name + obj["section"];
             var date = obj["classes"][0]["date"];
             var color_str = course_type + "_color";
@@ -703,6 +742,9 @@ var calendar = (function(){
             var my_list = get_course_time_info(class_info);
             var classes = [];
             $.each(my_list, function(index, time_info){
+                if (!time_info["start"]){
+                    return;
+                }
                 var event_data = {
                     data : {
                         type: course_type,
@@ -723,10 +765,17 @@ var calendar = (function(){
                 classes.push(event_data);
                 //console.log("event_data? " + format(event_data));
             });
-            course_data[course_name][course_type].push(classes);
+            //console.log("course_data: "  + format(course_data));
+            //console.log(course_name + " " + course_type);
+            //console.log("classes: " + format(classes));
+            if (classes.length != 0){
+                course_data[course_name][course_type].push(classes);
+            }
+
         });
 
         // LEC > LAB > TUT
+        //console.log(format(course_type_array));
         var flattened_course_type_info = {};
         $.each(course_type_array, function(index, course_type){
             flattened_course_type_info[course_type] = [];
@@ -741,7 +790,7 @@ var calendar = (function(){
         });
 
         num_course_responded = num_course_responded + 1;
-        if (num_course_responded + num_course_not_found.length >= course_list_length){
+        if (num_course_responded + course_with_no_schedule.length >= course_list_length){
             prepare_for_search();
             return;
         }
@@ -875,14 +924,18 @@ var init = function(){
     term_toggle.init();
     $("#my_form").submit(on_form_submmit);
     $("#unselect_course_btn").click(on_list_unselect);
-
+    $("#clear_course_btn").click(on_list_clear);
 };
 
 function on_list_unselect(e){
-    console.log(1);
+    //console.log(1);
     select_obj.unselect_list();
-    console.log(2);
-    on_form_submmit(e);
+    //console.log(2);
+    calendar.clear();
+}
+
+function on_list_clear(e){
+    select_obj.clear_list();
 }
 
 function on_form_submmit(e){
@@ -907,14 +960,20 @@ function on_form_submmit(e){
     if (e.preventDefault) e.preventDefault();
     calendar.clear();
     color.clear();
+    courses.clear_input();
     console.log("form submitted");
     $('.course_list option:selected').each(function(){
         selected_courses.push(this.getAttribute("value").toUpperCase());
     });
     if (selected_courses.length > max_num_course){
         var str = "You have selected more than " + max_num_course + " courses. Calm down...";
-        alertify.set({ delay: 4000 });
+        alertify.set({ delay: 3000 });
         alertify.error(str);
+        return false;
+    }
+    if (selected_courses.length == 0){
+        alertify.set({ delay: 3000 });
+        alertify.log("No course selected");
         return false;
     }
     alertify.log("Trying my best to arrange your course schedule...", "", 3000);

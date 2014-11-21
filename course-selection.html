@@ -8,7 +8,7 @@ License URL: http://creativecommons.org/licenses/by/3.0/
 <!DOCTYPE HTML>
 <html>
 <head>
-<title>DaDa's Place</title>
+<title>University of Waterloo -- Course Selection Tool</title>
 <!-- CSS -->
 <link href="fonts/css/font-awesome.min.css" rel="stylesheet" >
 <link href='http://fonts.googleapis.com/css?family=Kreon:300,400,700' rel='stylesheet' type='text/css'>
@@ -113,7 +113,7 @@ License URL: http://creativecommons.org/licenses/by/3.0/
                             <input type="text" class="form-control" name="courses" id="courses" placeholder="CS245"/>
                             <i class="form-control-feedback glyphicon glyphicon-search"></i>
                         </div>
-                        <div class="invisible">
+                        <div class="hide">
                             <div class="form-group">
                                 <label>Course List</label>
                                 <select class="course_list" multiple="multiple">
@@ -123,7 +123,8 @@ License URL: http://creativecommons.org/licenses/by/3.0/
                                <button id="form_submit_btn" class="btn btn-primary ladda-button" data-style="zoom-in">
                                		<span class="ladda-label">Arrange</span>
                                </button>
-                               <input id="unselect_course_btn" type="button" class="btn btn-default" value="Clear"></button>
+                               <input id="unselect_course_btn" type="button" class="btn btn-default" value="Unselect"></button>
+                               <input id="clear_course_btn" type="button" class="btn btn-default" value="Clear"></button>
                             </div>
                         </div>
                     </form>
