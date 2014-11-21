@@ -118,6 +118,9 @@ var select_obj = (function(){
     }
 
     function add_item(value, allow_duplicate){
+        if (!value){
+            return;
+        }
         var item = get_item(value);
         if (!item.length || allow_duplicate){
             list.append('<option value="' + value + '">'+value+'</option>');
