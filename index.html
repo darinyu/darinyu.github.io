@@ -1,0 +1,186 @@
+
+<!--A Design by W3layouts
+Author: W3layout
+Author URL: http://w3layouts.com
+License: Creative Commons Attribution 3.0 Unported
+License URL: http://creativecommons.org/licenses/by/3.0/
+-->
+<!DOCTYPE HTML>
+<html>
+<head>
+<title>DaDa's Place</title>
+<!-- Bootstrap -->
+<link href="css/bootstrap.min.css" rel='stylesheet' type='text/css' />
+<link href="css/bootstrap.css" rel='stylesheet' type='text/css' />
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script type="application/x-javascript"> addEventListener("load", function() { setTimeout(hideURLbar, 0); }, false); function hideURLbar(){ window.scrollTo(0,1); } </script>
+ <!--[if lt IE 9]>
+     <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+     <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+<![endif]-->
+<link href='http://fonts.googleapis.com/css?family=Kreon:300,400,700' rel='stylesheet' type='text/css'>
+<link href="css/style.css" rel="stylesheet" type="text/css" media="all" />
+<!-- start plugins -->
+<script type="text/javascript" src="js/jquery.min.js"></script>
+	<script>
+		$(function() {
+			var pull 		= $('#pull');
+				menu 		= $('nav ul');
+				menuHeight	= menu.height();
+			$(pull).on('click', function(e) {
+				e.preventDefault();
+				menu.slideToggle();
+			});
+			$(window).resize(function(){
+        		var w = $(window).width();
+        		if(w > 320 && menu.is(':hidden')) {
+        			menu.removeAttr('style');
+        		}
+    		});
+		});
+	</script>
+<!----font-Awesome----->
+   	<link rel="stylesheet" href="fonts/css/font-awesome.min.css">
+<!----font-Awesome----->
+</head>
+<body>
+<div class="header_bg" id="home"><!-- start header -->
+<div class="container">
+	<div class="row header text-center specials">
+		<div class="h_logo">
+			<a href="index.html"><img src="images/logo.png" alt="" class="responsive"/></a>
+		</div>
+		<nav class="top-nav">
+			<ul class="top-nav nav_list">
+				<li><a href="portfolio.html">portfolio</a></li>
+				<li class="page-scroll"><a href="#about">About</a></li>
+				<li class="logo page-scroll"><a title="hexa" href="index.html"><img src="images/logo.png" alt="" class="responsive"/></a></li>
+			    <li class="page-scroll"><a href="#">blog</a></li>
+				<li class="page-scroll"><a href="#contact">get in touch</a></li>
+			</ul>
+			<a href="#" id="pull"><img src="images/nav-icon.png" title="menu" /></a>
+		</nav>
+		<div class="clearfix"></div>
+	</div>
+</div>
+</div>
+<div class="slider_bg"><!-- start slider -->
+<div class="container">
+		<div class="row slider">
+		<div class="wmuSlider example1"><!-- start wmuSlider example1 -->
+			   <div class="wmuSliderWrapper">
+				   <article style="position: absolute; width: 100%; opacity: 0;">
+				  	 	<div class="slider_img text-center">
+				   			<ul class="list-unstyled list_imgs">
+				   				<li><img src="images/sample_slider_1.jpg" alt="" class="responsive"/></li>
+				   			</ul>
+			           	</div>
+				   </article>
+				   <article style="position: relative; width: 100%; opacity: 1;">
+				  	 	<div class="slider_img text-center">
+				   			<ul class="list-unstyled list_imgs">
+				   				<li><img src="images/sample_slider_2.jpg" alt="" class="responsive"/></li>
+				   			</ul>
+			           	</div>
+				   </article>
+				   <article style="position: relative; width: 100%; opacity: 1;">
+				  	 	<div class="slider_img text-center">
+				   			<ul class="list-unstyled list_imgs">
+				   				<li><img src="images/sample_slider_3.jpg" alt="" class="responsive"/></li>
+				   			</ul>
+			           	</div>
+				   </article>
+				 </div>
+                <ul class="wmuSliderPagination">
+                	<li><a href="#" class="">0</a></li>
+                	<li><a href="#" class="">1</a></li>
+                	<li><a href="#" class="">2</a></li>
+                </ul>
+			<script src="js/jquery.wmuSlider.js"></script>
+		     <script>
+				 $('.example1').wmuSlider();
+			</script>
+        </div><!-- end wmuSlider example1 -->
+        <div class="clearfix"></div>
+      </div>
+</div>
+</div>
+<div class="main_bg"  id="about"><!-- start about us -->
+<div class="container">
+	<div class="row about">
+		<div class="col-md-3 about_img">
+			<!--<img src="images/user.png" alt="" class="responsive"/> -->
+		</div>
+		<div class="col-md-9 about_text">
+			<h3>Ziting Yu</h3>
+			<h4>Software Engineer</h4>
+			<p>I am a student from University of Waterloo where I expect to earn a Bachelor Degree of Computer Science in 2017. My area of interests covers basically
+				everything that could make people say 'WOW', which ranges from small website UI widget to a three-point buzzer beater shot. This website serves as
+				a place to store my random personal projects and to record my unrealistic thoughts that may never be legit. However, feel free to
+				click around and maybe you will find something worth wasting your time. </p>
+			<div class="soc_icons navbar-right">
+				<ul class="list-unstyled text-center">
+					<li><a href="https://www.facebook.com/darin.yu.73"><i class="fa fa-facebook"></i></a></li>
+					<li><a href="https://plus.google.com/u/0/109866135952097298152/posts"><i class="fa fa-google-plus"></i></a></li>
+					<li><a href="#"><i class="fa fa-linkedin"></i></a></li>
+				</ul>
+			</div>
+		</div>
+	</div>
+</div>
+</div>
+<div class="footer_bg" id="contact"><!-- start footer -->
+<div class="container">
+	<div class="row footer">
+		<div class="col-md-8 contact_left">
+			<h3>get in touch</h3>
+			<p>In order to get in touch use the contact form below:</h4>
+			<form method="post" action="contact-post.html">
+				<input type="text" value="Name (Required)" onfocus="this.value = '';" onblur="if (this.value == '') {this.value = 'Name (Required)';}">
+				<input type="text" value="Email (Required)" onfocus="this.value = '';" onblur="if (this.value == '') {this.value = 'Email (Required)';}">
+				<input type="text" value="Subject" onfocus="this.value = '';" onblur="if (this.value == '') {this.value = 'Subject';}">
+				<textarea onfocus="if(this.value == 'Your Message here....') this.value='';" onblur="if(this.value == '') this.value='Your Message here....;" >Your Message here....</textarea>
+				<span class="pull-right"><input type="submit" value="submit us"></span>
+			</form>
+		</div>
+		<div class="col-md-4  contact_right">
+			<p><span>Rule: </span> There is just one rule you need to follow --- simple and easy. You can send me whatever you want as long as
+			you believe the message box on the left could perfectly deliver your message to me. Have fun typing :)</p>
+			<ul class="list-unstyled address">
+				<li><i class="fa fa-map-marker"></i><span>Guess where</span></li>
+				<li><i class="fa fa-phone"></i><span>(1)519 574 2524</span></li>
+				<li><i class="fa fa-envelope"></i><a href="mailto:darinyu27@gmail.com">Darin Yu</a></li>
+			</ul>
+		</div>
+	</div>
+</div>
+</div>
+<div class="footer1_bg"><!-- start footer1 -->
+	<div class="container">
+		<div class="row  footer">
+			<div class="copy text-center">
+				<p class="link"><span>&#169; All rights reserved | Template by&nbsp;<a href="http://w3layouts.com/"> W3Layouts</a></span></p>
+				<a href="#home" id="toTop" style="display: block;"><span id="toTopHover" style="opacity: 1;"> </span></a>
+			</div>
+		</div>
+		<script type="text/javascript">
+				$(function() {
+				  $('a[href*=#]:not([href=#])').click(function() {
+				    if (location.pathname.replace(/^\//,'') == this.pathname.replace(/^\//,'') && location.hostname == this.hostname) {
+				      var target = $(this.hash);
+				      target = target.length ? target : $('[name=' + this.hash.slice(1) +']');
+				      if (target.length) {
+				        $('html,body').animate({
+				          scrollTop: target.offset().top
+				        }, 1000);
+				        return false;
+				      }
+				    }
+				  });
+				});
+		</script>
+		<!---- start-smoth-scrolling---->
+	</div>
+</div>
+</body>
+</html>
