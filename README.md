@@ -1,2 +1,0 @@
-# biddingSystem
-CS2102
